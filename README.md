@@ -1,18 +1,21 @@
-## Getting Started
+**_Watermelon Fighters — Tower Defense Game_**
+A Java Swing tower defense game. Place monkey towers, defeat waves of enemies, earn currency, and upgrade your defenses to survive.
 
-Welcome to the VS Code Java world. Here is a guideline to help you get started to write Java code in Visual Studio Code.
+**How to Run**
+Open the project as a Java Project on VSCode.
+Click the run button on VSCode.
 
-## Folder Structure
+Controls
+Input	Action
+Left Click	Place / select tower
+ESC	Cancel placement
+P	Pause
 
-The workspace contains two folders by default, where:
+All monkeys can be upgraded three times and can be sold for 60% of their value.
 
-- `src`: the folder to maintain sources
-- `lib`: the folder to maintain dependencies
-
-Meanwhile, the compiled output files will be generated in the `bin` folder by default.
-
-> If you want to customize the folder structure, open `.vscode/settings.json` and update the related settings there.
-
-## Dependency Management
-
-The `JAVA PROJECTS` view allows you to manage your dependencies. More details can be found [here](https://github.com/microsoft/vscode-java-dependency#manage-dependencies).
+There are 5 different maps:
+Meadow Loop
+Desert Zigzag
+Spiral Vortex
+River Fork
+Gauntlet
