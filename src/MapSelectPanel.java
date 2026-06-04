@@ -1,5 +1,4 @@
 import javax.swing.*;
-import java.lang.reflect.Constructor;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.*;
@@ -267,38 +266,11 @@ public class MapSelectPanel extends JPanel {
     // ------------------------------------------------------------------ //
     private void launchGame(int mapIndex) {
         parentFrame.getContentPane().removeAll();
-        // Use reflection to construct GamePanel with whichever constructor exists
-        Component comp = null;
-        try {
-            Class<?> gpClass = GamePanel.class;
-            try {
-                Constructor<?> c = gpClass.getConstructor(MapData.class);
-                comp = (Component) c.newInstance(MapData.ALL[mapIndex]);
-            } catch (NoSuchMethodException e1) {
-                try {
-                    Constructor<?> c2 = gpClass.getConstructor(int.class);
-                    comp = (Component) c2.newInstance(mapIndex);
-                } catch (NoSuchMethodException e2) {
-                    // fallback to no-arg constructor
-                    Constructor<?> c3 = gpClass.getConstructor();
-                    comp = (Component) c3.newInstance();
-                    // try to set map via a setter if available
-                    try {
-                        gpClass.getMethod("setMap", MapData.class).invoke(comp, MapData.ALL[mapIndex]);
-                    } catch (Exception ex) {
-                        // ignore
-                    }
-                }
-            }
-        } catch (Exception ex) {
-            // As a last resort, create an empty panel
-            comp = new JPanel();
-        }
-
+        GamePanel comp = new GamePanel(MapData.ALL[mapIndex]);
         parentFrame.add(comp);
         parentFrame.pack();
         parentFrame.revalidate();
         parentFrame.repaint();
-        if (comp instanceof JComponent) ((JComponent)comp).requestFocusInWindow();
+        comp.requestFocusInWindow();
     }
 }

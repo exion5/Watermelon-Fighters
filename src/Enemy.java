@@ -4,6 +4,9 @@ import java.util.List;
 public class Enemy {
     public enum Type { GOBLIN, ORC, TROLL, DRAGON, SHADE }
 
+    /** Set by GamePanel before spawning enemies so all enemies use the selected map's path. */
+    public static int[][] activePath = Constants.PATH;
+
     private Type type;
     private float x, y;
     private int pathIndex = 0;
@@ -21,7 +24,7 @@ public class Enemy {
 
     public Enemy(Type type) {
         this.type = type;
-        int[][] path = Constants.PATH;
+        int[][] path = activePath;
         x = path[0][0] * Constants.TILE + Constants.TILE / 2f;
         y = path[0][1] * Constants.TILE + Constants.TILE / 2f;
         switch (type) {
@@ -38,7 +41,7 @@ public class Enemy {
         if (slowTimer > 0) slowTimer--;
 
         float spd = slowTimer > 0 ? speed * 0.4f : speed;
-        int[][] path = Constants.PATH;
+        int[][] path = activePath;
         if (pathIndex >= path.length - 1) {
             reached = true;
             return;
@@ -105,7 +108,7 @@ public class Enemy {
     public Type getType() { return type; }
 
     public float distanceTraveled() {
-        int[][] path = Constants.PATH;
+        int[][] path = activePath;
         float d = 0;
         for (int i = 1; i <= pathIndex && i < path.length; i++) {
             float ax = path[i-1][0]*Constants.TILE + Constants.TILE/2f;

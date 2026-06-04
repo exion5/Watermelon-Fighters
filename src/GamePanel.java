@@ -35,6 +35,9 @@ public class GamePanel extends JPanel implements ActionListener {
 
     private Timer timer;
 
+    // Selected map (set before game starts)
+    private MapData currentMap;
+
     // Sidebar colors
     private static final Color UI_BG       = new Color(0x1A1A2E);
     private static final Color UI_PANEL    = new Color(0x16213E);
@@ -44,6 +47,12 @@ public class GamePanel extends JPanel implements ActionListener {
     private static final Color UI_SUBTEXT  = new Color(0xAAAAAA);
 
     public GamePanel() {
+        this(MapData.ALL[0]);
+    }
+
+    public GamePanel(MapData map) {
+        this.currentMap = map;
+        Enemy.activePath = map.path;
         setPreferredSize(new Dimension(Constants.TOTAL_WIDTH, Constants.GAME_HEIGHT));
         setBackground(Color.BLACK);
         buildPathSet();
@@ -67,7 +76,7 @@ public class GamePanel extends JPanel implements ActionListener {
     }
 
     private void buildPathSet() {
-        for (int[] pt : Constants.PATH) pathTiles.add((long)pt[0] * 1000 + pt[1]);
+        for (int[] pt : currentMap.path) pathTiles.add((long)pt[0] * 1000 + pt[1]);
     }
 
     private boolean isPathTile(int col, int row) {
@@ -152,19 +161,19 @@ public class GamePanel extends JPanel implements ActionListener {
             for (int col=0; col<Constants.COLS; col++) {
                 boolean isPath = isPathTile(col, row);
                 if (isPath) {
-                    g.setColor(new Color(0xC2A45A));
+                    g.setColor(currentMap.pathColor);
                 } else {
                     // Checkerboard subtle
-                    g.setColor((col+row)%2==0 ? new Color(0x2E7D32) : new Color(0x388E3C));
+                    g.setColor((col+row)%2==0 ? currentMap.grassA : currentMap.grassB);
                 }
                 g.fillRect(col*Constants.TILE, row*Constants.TILE, Constants.TILE, Constants.TILE);
             }
         }
 
         // Path overlay lines
-        g.setColor(new Color(0xA08040, true));
+        g.setColor(new Color(0,0,0,50));
         g.setStroke(new BasicStroke(1));
-        for (int[] pt : Constants.PATH) {
+        for (int[] pt : currentMap.path) {
             int col=pt[0], row=pt[1];
             g.drawRect(col*Constants.TILE, row*Constants.TILE, Constants.TILE, Constants.TILE);
         }
@@ -183,7 +192,7 @@ public class GamePanel extends JPanel implements ActionListener {
         }
 
         // Start/end markers
-        int[] sp = Constants.PATH[0], ep = Constants.PATH[Constants.PATH.length-1];
+        int[] sp = currentMap.path[0], ep = currentMap.path[currentMap.path.length-1];
         g.setColor(new Color(0x1565C0));
         g.fillRoundRect(sp[0]*Constants.TILE+2, sp[1]*Constants.TILE+2, Constants.TILE-4, Constants.TILE-4, 8, 8);
         g.setColor(Color.WHITE);
