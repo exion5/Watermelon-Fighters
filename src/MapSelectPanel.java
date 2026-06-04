@@ -70,7 +70,7 @@ public class MapSelectPanel extends JPanel {
 
     private void drawTitle(Graphics2D g) {
         g.setFont(new Font("Georgia", Font.BOLD, 36));
-        String title = "🍉 Watermelon Munchers";
+        String title = "\uD83C\uDF49 Watermelon Fighters";
         FontMetrics fm = g.getFontMetrics();
         int tx = (getWidth() - fm.stringWidth(title)) / 2;
 
