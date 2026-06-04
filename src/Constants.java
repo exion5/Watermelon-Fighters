@@ -28,10 +28,10 @@ public class Constants {
 
     // Tower definitions: name, cost, range(tiles), damage, fireRate(ticks), color
     public static final Object[][] TOWER_DEFS = {
-        {"Archer",   80,  3.5, 15,  40, new java.awt.Color(0x8B4513)},
-        {"Cannon",   150, 2.5, 60,  90, new java.awt.Color(0x555555)},
-        {"Frost",    120, 3.0, 8,   50, new java.awt.Color(0x00BFFF)},
-        {"Laser",    200, 4.0, 25,  20, new java.awt.Color(0xFF2222)},
-        {"Mortar",   175, 5.0, 80, 120, new java.awt.Color(0x8B6914)},
+        {"Dart Monkey",   80,  3.5, 15,  40, new java.awt.Color(0xE53935)},
+        {"Bomb Shooter",  150, 2.5, 60,  90, new java.awt.Color(0x37474F)},
+        {"Ice Monkey",    120, 3.0, 8,   50, new java.awt.Color(0x29B6F6)},
+        {"Super Monkey",  200, 4.0, 25,  20, new java.awt.Color(0xFFD600)},
+        {"Mortar Monkey", 175, 5.0, 80, 120, new java.awt.Color(0x558B2F)},
     };
 }

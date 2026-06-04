@@ -1,7 +1,7 @@
 import java.awt.*;
 
 public class Projectile {
-    public enum PType { ARROW, CANNONBALL, FROST_BOLT, LASER_BEAM, MORTAR_SHELL }
+    public enum PType { DART, CANNONBALL, FROST_BOLT, LASER_BEAM, MORTAR_SHELL }
 
     private float x, y;
     private Enemy target;
@@ -12,7 +12,7 @@ public class Projectile {
     private float splashRadius; // for cannon/mortar
     private java.util.List<Enemy> allEnemies;
 
-    // Laser: start point
+    // Laser/Super: start point
     private float sx, sy;
     private boolean isLaser = false;
 
@@ -31,7 +31,6 @@ public class Projectile {
     public void update() {
         if (done) return;
         if (isLaser) {
-            // Laser hits instantly
             applyHit();
             done = true;
             return;
@@ -73,44 +72,65 @@ public class Projectile {
     public void draw(Graphics2D g) {
         if (done) return;
         switch (ptype) {
-            case ARROW:
-                g.setColor(new Color(0xA0522D));
+            case DART:
+                // Dart: thin pointed projectile
+                g.setColor(new Color(0x37474F));
                 g.setStroke(new BasicStroke(2));
                 if (!target.isDead()) {
                     float dx = target.getX()-x, dy=target.getY()-y;
-                    float len=10, d=(float)Math.sqrt(dx*dx+dy*dy);
-                    if(d>0){g.drawLine((int)x,(int)y,(int)(x+dx/d*len),(int)(y+dy/d*len));}
+                    float len=12, d=(float)Math.sqrt(dx*dx+dy*dy);
+                    if(d>0){
+                        float ex = x+dx/d*len, ey = y+dy/d*len;
+                        g.drawLine((int)x,(int)y,(int)ex,(int)ey);
+                        // tip
+                        g.setColor(new Color(0xE53935));
+                        g.fillOval((int)ex-2,(int)ey-2,5,5);
+                    }
                 }
-                g.fillOval((int)x-3,(int)y-3,6,6);
+                g.setColor(new Color(0xA0522D));
+                g.fillOval((int)x-2,(int)y-2,5,5);
                 break;
             case CANNONBALL:
-                g.setColor(Color.DARK_GRAY);
-                g.fillOval((int)x-5,(int)y-5,10,10);
-                g.setColor(Color.GRAY);
-                g.fillOval((int)x-3,(int)y-4,4,4);
+                // Bomb: black ball with fuse
+                g.setColor(Color.BLACK);
+                g.fillOval((int)x-6,(int)y-6,12,12);
+                g.setColor(new Color(0x555555));
+                g.fillOval((int)x-4,(int)y-5,5,5);
+                // Fuse spark
+                g.setColor(new Color(0xFF6F00));
+                g.fillOval((int)x-1,(int)y-8,3,3);
                 break;
             case FROST_BOLT:
-                g.setColor(new Color(0x00BFFF,true));
-                g.fillOval((int)x-4,(int)y-4,8,8);
+                // Ice shard
+                g.setColor(new Color(0x29B6F6));
+                g.fillOval((int)x-5,(int)y-5,10,10);
+                g.setColor(new Color(0xE1F5FE));
+                g.fillOval((int)x-2,(int)y-2,5,5);
+                // sparkle
                 g.setColor(Color.WHITE);
-                g.fillOval((int)x-2,(int)y-2,4,4);
+                g.setStroke(new BasicStroke(1.2f));
+                g.drawLine((int)x-4,(int)y,(int)x+4,(int)y);
+                g.drawLine((int)x,(int)y-4,(int)x,(int)y+4);
                 break;
             case LASER_BEAM:
-                // drawn as line from sx,sy to target
+                // Super Monkey energy beam
                 if (!target.isDead()) {
-                    g.setColor(new Color(255,50,50,200));
+                    g.setColor(new Color(255,200,0,200));
                     g.setStroke(new BasicStroke(3));
                     g.drawLine((int)sx,(int)sy,(int)target.getX(),(int)target.getY());
-                    g.setColor(new Color(255,200,200,120));
+                    g.setColor(new Color(255,255,150,100));
                     g.setStroke(new BasicStroke(7));
                     g.drawLine((int)sx,(int)sy,(int)target.getX(),(int)target.getY());
                 }
                 break;
             case MORTAR_SHELL:
-                g.setColor(new Color(0xD4A017));
+                // Mortar shell
+                g.setColor(new Color(0x558B2F));
                 g.fillOval((int)x-4,(int)y-4,8,8);
-                g.setColor(new Color(0x8B6914));
+                g.setColor(new Color(0x33691E));
                 g.drawOval((int)x-4,(int)y-4,8,8);
+                g.setColor(new Color(0xFFD600));
+                g.fillOval((int)x-1,(int)y-6,3,3);
                 break;
         }
         g.setStroke(new BasicStroke(1));

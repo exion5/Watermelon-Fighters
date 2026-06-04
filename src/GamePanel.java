@@ -31,7 +31,7 @@ public class GamePanel extends JPanel implements ActionListener {
 
     // Tower type buttons in the sidebar
     private Rectangle[] towerButtons = new Rectangle[5];
-    private Tower.TType[] towerTypes = {Tower.TType.ARCHER, Tower.TType.CANNON, Tower.TType.FROST, Tower.TType.LASER, Tower.TType.MORTAR};
+    private Tower.TType[] towerTypes = {Tower.TType.DART, Tower.TType.BOMB, Tower.TType.ICE, Tower.TType.SUPER, Tower.TType.MORTAR};
 
     private Timer timer;
 
@@ -244,7 +244,7 @@ public class GamePanel extends JPanel implements ActionListener {
         // Title
         g.setColor(UI_ACCENT);
         g.setFont(new Font("Georgia", Font.BOLD, 14));
-        drawCentered(g, "TOWER DEFENSE", ux, uw, y); y+=18;
+        drawCentered(g, "MONKEY DEFENSE", ux, uw, y); y+=18;
 
         // Wave info
         g.setColor(UI_BORDER);
@@ -284,12 +284,12 @@ public class GamePanel extends JPanel implements ActionListener {
         g.fillRoundRect(ux+6, y, uw-12, 1, 2, 2); y+=6;
         g.setColor(UI_SUBTEXT);
         g.setFont(new Font("SansSerif", Font.BOLD, 10));
-        drawCentered(g, "PLACE TOWER", ux, uw, y); y+=14;
+        drawCentered(g, "PLACE MONKEY", ux, uw, y); y+=14;
 
         // Tower buttons
-        String[] names = {"Archer","Cannon","Frost","Laser","Mortar"};
+        String[] names = {"Dart Monkey","Bomb Shooter","Ice Monkey","Super Monkey","Mortar Monkey"};
         int[] costs     = {80,150,120,200,175};
-        Color[] colors  = {new Color(0x8B4513),new Color(0x555555),new Color(0x00BFFF),new Color(0xFF2222),new Color(0x8B6914)};
+        Color[] colors  = {new Color(0xE53935),new Color(0x37474F),new Color(0x29B6F6),new Color(0xFFD600),new Color(0x558B2F)};
 
         for (int i=0; i<5; i++) {
             boolean sel = selectedTowerType == towerTypes[i];
@@ -524,10 +524,10 @@ public class GamePanel extends JPanel implements ActionListener {
 
     private int costOf(Tower.TType t) {
         switch(t) {
-            case ARCHER: return 80;
-            case CANNON: return 150;
-            case FROST:  return 120;
-            case LASER:  return 200;
+            case DART:   return 80;
+            case BOMB:   return 150;
+            case ICE:    return 120;
+            case SUPER:  return 200;
             case MORTAR: return 175;
             default: return 999;
         }
