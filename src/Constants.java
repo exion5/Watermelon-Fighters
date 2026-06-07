@@ -1,22 +1,21 @@
 public class Constants {
-    // Window
-    public static final int GAME_WIDTH  = 900;
+    public static final int GAME_WIDTH = 900; // main window
     public static final int GAME_HEIGHT = 660;
-    public static final int UI_WIDTH    = 220;
+    public static final int UI_WIDTH = 220;
     public static final int TOTAL_WIDTH = GAME_WIDTH + UI_WIDTH;
+    public static final int TOTAL_HEIGHT = GAME_HEIGHT;
 
-    // Grid
-    public static final int TILE = 40;
-    public static final int COLS = GAME_WIDTH  / TILE;  // 22
-    public static final int ROWS = GAME_HEIGHT / TILE;  // 16
+    public static final int MAP_PAD = 10; // black padding around the map
 
-    // Game
-    public static final int STARTING_LIVES    = 20;
+    public static final int TILE = 40; // grid pattern size
+    public static final int COLS = GAME_WIDTH  / TILE; // 22
+    public static final int ROWS = GAME_HEIGHT / TILE; // 16
+
+    public static final int STARTING_LIVES = 20;
     public static final int STARTING_CURRENCY = 200;
-    public static final int FPS               = 60;
+    public static final int FPS = 60;
 
-    // Path (col, row) waypoints
-    public static final int[][] PATH = {
+    public static final int[][] PATH = { // predefined path for balloons
         {0,2},{1,2},{2,2},{3,2},{4,2},{5,2},{6,2},{6,3},{6,4},{6,5},{6,6},
         {7,6},{8,6},{9,6},{10,6},{11,6},{12,6},{12,5},{12,4},{12,3},{12,2},
         {13,2},{14,2},{15,2},{16,2},{16,3},{16,4},{16,5},{16,6},{16,7},{16,8},
@@ -26,12 +25,11 @@ public class Constants {
         {18,12},{19,12},{20,12},{21,12},{21,13}
     };
 
-    // Tower definitions: name, cost, range(tiles), damage, fireRate(ticks), color
-    public static final Object[][] TOWER_DEFS = {
-        {"Dart Monkey",   80,  3.5, 15,  40, new java.awt.Color(0xE53935)},
-        {"Bomb Shooter",  150, 2.5, 60,  90, new java.awt.Color(0x37474F)},
-        {"Ice Monkey",    120, 3.0, 8,   50, new java.awt.Color(0x29B6F6)},
-        {"Super Monkey",  200, 4.0, 25,  20, new java.awt.Color(0xFFD600)},
+    public static final Object[][] TOWER_DEFS = { // the different tower types and stats
+        {"Dart Monkey", 80, 3.5, 15, 40, new java.awt.Color(0xE53935)},
+        {"Bomb Shooter", 150, 2.5, 60, 90, new java.awt.Color(0x37474F)},
+        {"Ice Monkey", 120, 3.0, 8, 50, new java.awt.Color(0x29B6F6)},
+        {"Super Monkey", 200, 4.0, 25, 20, new java.awt.Color(0xFFD600)},
         {"Mortar Monkey", 175, 5.0, 80, 120, new java.awt.Color(0x558B2F)},
     };
 }

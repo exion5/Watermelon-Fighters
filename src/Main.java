@@ -32,15 +32,3 @@ public class Main {
         start.requestFocusInWindow();
     }
 }
-
-/*import java.awt.Frame;
-import javax.swing.SwingUtilities;
-import javax.swing.JFrame;
-
-public class PixelPurge {
-    public static void main(String[] args) { // runs the game when its ready
-        SwingUtilities.invokeLater(() -> launchLogin());
-    }
-
-    
-} */

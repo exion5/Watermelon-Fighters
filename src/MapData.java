@@ -1,19 +1,14 @@
 import java.awt.Color;
 
-/**
- * Holds all 5 map definitions.
- * Each map has a name, a theme (grass colours, path colour),
- * and a path expressed as (col, row) waypoints on the 22×16 grid.
- */
 public class MapData {
 
     public final String  name;
     public final String  description;
     public final int[][] path;
-    public final Color   grassA;      // even tiles
-    public final Color   grassB;      // odd tiles
-    public final Color   pathColor;
-    public final Color   accentColor; // UI accent for this map
+    public final Color grassA; // even tiles
+    public final Color grassB; // odd tiles
+    public final Color pathColor;
+    public final Color accentColor; // UI accent for this map
 
     private MapData(String name, String description, int[][] path,
                     Color grassA, Color grassB, Color pathColor, Color accentColor) {
@@ -26,10 +21,7 @@ public class MapData {
         this.accentColor = accentColor;
     }
 
-    // ------------------------------------------------------------------ //
-    //  MAP 1 – Meadow Loop  (original S-shape, 3 horizontal sweeps)       //
-    // ------------------------------------------------------------------ //
-    private static final int[][] PATH_MEADOW = {
+    private static final int[][] PATH_MEADOW = { // first map path: gentle S-curve through grassy fields
         {0,2},{1,2},{2,2},{3,2},{4,2},{5,2},{6,2},
         {6,3},{6,4},{6,5},{6,6},
         {7,6},{8,6},{9,6},{10,6},{11,6},{12,6},
@@ -43,10 +35,7 @@ public class MapData {
         {21,13}
     };
 
-    // ------------------------------------------------------------------ //
-    //  MAP 2 – Desert Zigzag  (4 vertical drops, harsh angles)            //
-    // ------------------------------------------------------------------ //
-    private static final int[][] PATH_DESERT = {
+    private static final int[][] PATH_DESERT = { // second map path: zigzag with long vertical drops, through sandy terrain
         {0,1},{1,1},{2,1},{3,1},{4,1},{5,1},
         {5,2},{5,3},{5,4},{5,5},{5,6},{5,7},{5,8},{5,9},{5,10},{5,11},{5,12},{5,13},
         {6,13},{7,13},{8,13},{9,13},{10,13},
@@ -56,10 +45,7 @@ public class MapData {
         {16,13},{17,13},{18,13},{19,13},{20,13},{21,13},{21,14}
     };
 
-    // ------------------------------------------------------------------ //
-    //  MAP 3 – Spiral (clockwise inward then out the bottom)              //
-    // ------------------------------------------------------------------ //
-    private static final int[][] PATH_SPIRAL = {
+    private static final int[][] PATH_SPIRAL = { // third map path: tight spiral vortex, enemies take a long route to exit
         // Enter top-left, sweep right along row 0
         {0,0},{1,0},{2,0},{3,0},{4,0},{5,0},{6,0},{7,0},{8,0},{9,0},{10,0},
         {11,0},{12,0},{13,0},{14,0},{15,0},{16,0},{17,0},{18,0},{19,0},{20,0},{21,0},
@@ -80,10 +66,7 @@ public class MapData {
         {3,11},{3,12},{3,13},{3,14},{3,15}
     };
 
-    // ------------------------------------------------------------------ //
-    //  MAP 4 – River Fork  (path splits appearance via two parallel runs) //
-    // ------------------------------------------------------------------ //
-    private static final int[][] PATH_RIVER = {
+    private static final int[][] PATH_RIVER = { // fourth map path: follow the river with limited tower spots, enemies enter from left-middle
         {0,7},{1,7},{2,7},{3,7},{4,7},
         {4,6},{4,5},{4,4},{4,3},{4,2},
         {5,2},{6,2},{7,2},{8,2},{9,2},{10,2},{11,2},{12,2},{13,2},{14,2},{15,2},{16,2},{17,2},
@@ -94,10 +77,7 @@ public class MapData {
         {21,14}
     };
 
-    // ------------------------------------------------------------------ //
-    //  MAP 5 – Gauntlet  (long straight lanes with sharp U-turns)         //
-    // ------------------------------------------------------------------ //
-    private static final int[][] PATH_GAUNTLET = {
+    private static final int[][] PATH_GAUNTLET = { // fifth map path: four long lanes with tight U-turns, enemies enter from top-left
         {0,1},{1,1},{2,1},{3,1},{4,1},{5,1},{6,1},{7,1},{8,1},{9,1},
         {10,1},{11,1},{12,1},{13,1},{14,1},{15,1},{16,1},{17,1},{18,1},{19,1},{20,1},
         {20,2},{20,3},{20,4},
@@ -115,10 +95,7 @@ public class MapData {
         {21,14}
     };
 
-    // ------------------------------------------------------------------ //
-    //  Public map registry                                                 //
-    // ------------------------------------------------------------------ //
-    public static final MapData[] ALL = {
+    public static final MapData[] ALL = { // all map options with their paths and colors
         new MapData(
             "Meadow Loop",
             "Classic S-curve through green fields",

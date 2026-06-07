@@ -8,32 +8,38 @@ public class WaveManager {
     private boolean waveActive = false;
     private boolean allSpawned = false;
 
-    // Wave definitions: each sub-array is {GOBLIN_count, ORC_count, TROLL_count, DRAGON_count, SHADE_count}
-    private static final int[][] WAVE_DEFS = {
-        {5, 0, 0, 0, 0},
-        {8, 2, 0, 0, 0},
-        {6, 4, 1, 0, 0},
-        {8, 4, 0, 0, 3},
-        {5, 6, 2, 1, 2},
-        {10, 5, 2, 2, 3},
-        {8, 8, 3, 2, 5},
-        {12, 6, 4, 3, 4},
-        {10, 10, 5, 4, 6},
-        {15, 10, 6, 5, 8},
-        {12, 12, 8, 6, 10},
-        {20, 15, 8, 8, 10},
-        {15, 15, 10, 10, 12},
-        {20, 20, 12, 12, 15},
-        {25, 20, 15, 15, 20},
+    private static final int WAVE_BONUS_BASE  = 55; // base bonus for clearing a wave, plus a scaling amount per wave to reward later progress
+    private static final int WAVE_BONUS_SCALE = 8;  // +8 per wave
+
+    private static final int[][] WAVE_DEFS = { // each wave definition: number of each enemy type to spawn (Goblin, Orc, Troll, Dragon, Shade)
+        { 5,  0,  0,  0,  0},  // W1  - gentle intro
+        { 7,  2,  0,  0,  0},  // W2
+        { 7,  4,  0,  0,  1},  // W3  - first shade
+        { 9,  5,  1,  0,  2},  // W4  - first troll
+        { 8,  7,  2,  1,  3},  // W5  - first dragon
+        {12,  8,  2,  2,  5},  // W6
+        {10, 10,  3,  2,  6},  // W7
+        {14,  8,  4,  3,  6},  // W8
+        {12, 12,  4,  4,  8},  // W9
+        {16, 12,  6,  4,  8},  // W10
+        {14, 14,  7,  5, 10},  // W11
+        {18, 14,  8,  6, 10},  // W12
+        {16, 16,  9,  8, 12},  // W13
+        {20, 18, 10,  9, 14},  // W14
+        {25, 22, 14, 12, 18},  // W15 – difficult ending
     };
 
-    public int getCurrentWave() { return currentWave; }
-    public int getTotalWaves() { return WAVE_DEFS.length; }
-    public boolean isWaveActive() { return waveActive; }
-    public boolean isAllSpawned() { return allSpawned; }
-    public boolean hasMoreWaves() { return currentWave < WAVE_DEFS.length; }
+    public int getCurrentWave()  { return currentWave; }
+    public int getTotalWaves()   { return WAVE_DEFS.length; }
+    public boolean isWaveActive(){ return waveActive; }
+    public boolean isAllSpawned(){ return allSpawned; }
+    public boolean hasMoreWaves(){ return currentWave < WAVE_DEFS.length; }
 
-    public void startNextWave() {
+    public int waveClearBonus() { // gold bonus for completing a wave
+        return WAVE_BONUS_BASE + (currentWave - 1) * WAVE_BONUS_SCALE;
+    }
+
+    public void startNextWave() { // sets up the next wave based on WAVE_DEFS, shuffling the spawn order for variety
         if (currentWave >= WAVE_DEFS.length) return;
         int[] def = WAVE_DEFS[currentWave];
         currentWave++;
@@ -48,16 +54,13 @@ public class WaveManager {
         for (int i=0; i<def[3]; i++) types.add(Enemy.Type.DRAGON);
         for (int i=0; i<def[4]; i++) types.add(Enemy.Type.SHADE);
 
-        // Shuffle for variety
         Collections.shuffle(types);
         spawnQueue.addAll(types);
 
-        // Tighten spawn interval on later waves
-        spawnInterval = Math.max(25, 55 - currentWave * 2);
+        spawnInterval = Math.max(18, 45 - currentWave * 2); // faster spawns in later waves, but never less than 18 frames apart
         spawnTimer = 0;
     }
 
-    /** Returns a new enemy to spawn this tick, or null */
     public Enemy update() {
         if (!waveActive || allSpawned) return null;
         spawnTimer++;
@@ -72,7 +75,5 @@ public class WaveManager {
         return null;
     }
 
-    public void waveComplete() {
-        waveActive = false;
-    }
+    public void waveComplete() { waveActive = false; }
 }
