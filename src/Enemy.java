@@ -5,7 +5,7 @@ import java.util.ArrayList;
 
 public class Enemy {
     public enum Type {
-        GOBLIN, ORC, TROLL, DRAGON, SHADE
+        SEEDLING, RIND, MELON, GIANTMELON, BLACKSEED
     }
 
     public static int[][] activePath = Constants.PATH;
@@ -23,6 +23,11 @@ public class Enemy {
 
     private Color baseColor;
     private float size;
+
+    private float poisonDmg   = 0;
+    private int   poisonTimer = 0;
+    private static final int POISON_TICK = 20; // deal damage every 20 frames
+    private int poisonTickTimer = 0;
 
     private float animTick   = 0; // increments every update; drives all animation
     private float bobPhase   = 0; // per-enemy random phase offset so they don't all sync
@@ -47,11 +52,11 @@ public class Enemy {
         y = path[0][1] * Constants.TILE + Constants.TILE / 2f;
         bobPhase = (float)(Math.random() * Math.PI * 2);
         switch (type) {
-            case GOBLIN: maxHp=80;   speed=1.9f; reward=8;  damage=1; baseColor=new Color(0x4CAF50); size=10; break;
-            case ORC:    maxHp=300;  speed=1.3f; reward=15; damage=2; baseColor=new Color(0x795548); size=14; break;
-            case TROLL:  maxHp=1200; speed=0.9f; reward=25; damage=4; baseColor=new Color(0x607D8B); size=18; break;
-            case DRAGON: maxHp=900;  speed=1.8f; reward=35; damage=4; baseColor=new Color(0xFF5722); size=16; break;
-            case SHADE:  maxHp=280;  speed=3.2f; reward=18; damage=3; baseColor=new Color(0x9C27B0); size=11; break;
+            case SEEDLING:   maxHp=80;   speed=1.9f; reward=8;  damage=1; baseColor=new Color(0x4CAF50); size=10; break;
+            case RIND:       maxHp=300;  speed=1.3f; reward=15; damage=2; baseColor=new Color(0x2E7D32); size=14; break;
+            case MELON:      maxHp=1200; speed=0.9f; reward=25; damage=4; baseColor=new Color(0xC62828); size=18; break;
+            case GIANTMELON: maxHp=900;  speed=1.8f; reward=35; damage=4; baseColor=new Color(0x1B5E20); size=16; break;
+            case BLACKSEED:  maxHp=280;  speed=3.2f; reward=18; damage=3; baseColor=new Color(0x1A1A1A); size=11; break;
         }
         hp = maxHp;
     }
@@ -85,11 +90,20 @@ public class Enemy {
         float dist = (float) Math.sqrt(dx*dx + dy*dy);
         if (dist < spd) { x = tx; y = ty; pathIndex++; }
         else { x += dx/dist*spd; y += dy/dist*spd; }
+
+        if (poisonTimer > 0) {
+            poisonTimer--;
+            poisonTickTimer++;
+            if (poisonTickTimer >= POISON_TICK) {
+                poisonTickTimer = 0;
+                takeDamage(poisonDmg);
+            }
+        }
     }
 
     private void spawnDeathParticles() { // Burst of particles in a random spread, colour based on enemy type
         particlesSpawned = true;
-        int count = type == Type.TROLL ? 18 : type == Type.DRAGON ? 22 : 12;
+        int count = type == Type.MELON ? 18 : type == Type.GIANTMELON ? 22 : 12;
         for (int i = 0; i < count; i++) {
             float angle = (float)(Math.random() * Math.PI * 2);
             float spd   = 0.8f + (float)(Math.random() * 2.5f);
@@ -112,6 +126,11 @@ public class Enemy {
 
     public boolean isFullyGone() { // after death animation is done and all particles are gone, we can remove this enemy from the list
         return dead && deathTimer >= DEATH_DURATION && particles.isEmpty();
+    }
+
+    public void applyPoison(float dmgPerTick, int duration) {
+        poisonDmg   = Math.max(poisonDmg, dmgPerTick);
+        poisonTimer = Math.max(poisonTimer, duration);
     }
 
     public void draw(Graphics2D g) { // Draw enemy and its particles; if dead, draw death animation instead
@@ -150,6 +169,10 @@ public class Enemy {
             float amount = 0.45f + 0.2f * (float)Math.sin(animTick * 0.3f);
             body = blend(baseColor, new Color(0x80D8FF), amount);
         }
+        if (poisonTimer > 0) {
+            float amount = 0.35f + 0.15f*(float)Math.sin(animTick*0.25f);
+            body = blend(body, new Color(0x76FF03), amount);
+        }
 
         float r = size;
         float ey = y + bob; // bobbing y
@@ -158,135 +181,101 @@ public class Enemy {
         g.fillOval((int)(x - r*0.9f + 2), (int)(ey + r*0.6f), (int)(r*1.8f), (int)(r*0.7f));
 
         switch (type) { // main body of the enemy
-            case GOBLIN: drawGoblin(g, x, ey, r, body); break;
-            case ORC:    drawOrc(g, x, ey, r, body);    break;
-            case TROLL:  drawTroll(g, x, ey, r, body);  break;
-            case DRAGON: drawDragon(g, x, ey, r, body); break;
-            case SHADE:  drawShade(g, x, ey, r, body);  break;
+            case SEEDLING:   drawSeedling(g, x, ey, r, body); break;
+            case RIND:       drawRind(g, x, ey, r, body);    break;
+            case MELON:      drawMelon(g, x, ey, r, body);  break;
+            case GIANTMELON: drawGiantmelon(g, x, ey, r, body); break;
+            case BLACKSEED:  drawBlackseed(g, x, ey, r, body);  break;
         }
 
         drawHpBar(g, x, ey, r);
     }
 
-    private void drawGoblin(Graphics2D g, float x, float y, float r, Color body) {
-        // Ears (pointy)
+    private void drawSeedling(Graphics2D g, float x, float y, float r, Color body) {
+        // Teardrop seed shape
         g.setColor(body.darker());
-        int[] earLx = {(int)(x-r+1), (int)(x-r-4), (int)(x-r+3)};
-        int[] earLy = {(int)(y-r+3), (int)(y-r-4), (int)(y-r-3)};
-        int[] earRx = {(int)(x+r-1), (int)(x+r+4), (int)(x+r-3)};
-        int[] earRy = {(int)(y-r+3), (int)(y-r-4), (int)(y-r-3)};
-        g.fillPolygon(earLx, earLy, 3);
-        g.fillPolygon(earRx, earRy, 3);
-
-        // Body circle
+        g.fillOval((int)(x-r+1), (int)(y-r+1), (int)(r*2-2), (int)(r*2+3));
         g.setColor(body);
+        g.fillOval((int)(x-r+2), (int)(y-r), (int)(r*2-4), (int)(r*2+2));
+
+        // White seed stripe
+        g.setColor(new Color(255, 255, 255, 120));
+        g.fillOval((int)(x-r*0.15f), (int)(y-r*0.6f), (int)(r*0.3f), (int)(r*0.9f));
+
+        // Tiny sprout on top
+        g.setColor(new Color(0x2E7D32));
+        g.setStroke(new BasicStroke(1.5f));
+        g.drawLine((int)x, (int)(y-r), (int)(x-3), (int)(y-r-5));
+        g.drawLine((int)x, (int)(y-r), (int)(x+2), (int)(y-r-4));
+        g.setStroke(new BasicStroke(1));
+
+        // Dot eyes
+        g.setColor(Color.BLACK);
+        g.fillOval((int)(x-r*0.3f-1), (int)(y-r*0.2f-1), 3, 3);
+        g.fillOval((int)(x+r*0.15f), (int)(y-r*0.2f-1), 3, 3);
+    }
+
+    private void drawRind(Graphics2D g, float x, float y, float r, Color body) {
+        // Dark green outer rind
+        g.setColor(new Color(0x1B5E20));
         g.fillOval((int)(x-r), (int)(y-r), (int)(r*2), (int)(r*2));
 
+        // White rind layer
+        g.setColor(new Color(0xDCEDC8));
+        g.fillOval((int)(x-r*0.82f), (int)(y-r*0.82f), (int)(r*1.64f), (int)(r*1.64f));
+
+        // Red flesh
+        g.setColor(body); // dark green color set earlier → override
+        g.setColor(new Color(0xC62828));
+        g.fillOval((int)(x-r*0.62f), (int)(y-r*0.62f), (int)(r*1.24f), (int)(r*1.24f));
+
+        // Seeds
+        g.setColor(new Color(0x111111));
+        g.fillOval((int)(x-r*0.3f-2), (int)(y-2), 4, 6);
+        g.fillOval((int)(x+r*0.15f), (int)(y-3), 4, 6);
+
+        // Angry brow lines
+        g.setColor(new Color(0x1B5E20));
+        g.setStroke(new BasicStroke(2f));
+        g.drawLine((int)(x-r*0.5f), (int)(y-r*0.55f), (int)(x-r*0.15f), (int)(y-r*0.4f));
+        g.drawLine((int)(x+r*0.15f), (int)(y-r*0.4f), (int)(x+r*0.5f), (int)(y-r*0.55f));
+        g.setStroke(new BasicStroke(1));
+    }
+
+    private void drawMelon(Graphics2D g, float x, float y, float r, Color body) {
+        // Dark green base
+        g.setColor(new Color(0x1B5E20));
+        g.fillOval((int)(x-r), (int)(y-r), (int)(r*2), (int)(r*2));
+
+        // Light green stripes
+        g.setColor(new Color(0x66BB6A));
+        for (int i = -1; i <= 1; i++) {
+            g.fillOval((int)(x + i*r*0.5f - r*0.15f), (int)(y-r), (int)(r*0.3f), (int)(r*2));
+        }
+
         // Outline
-        g.setColor(body.darker().darker());
-        g.setStroke(new BasicStroke(1.2f));
+        g.setColor(new Color(0x111111));
+        g.setStroke(new BasicStroke(2f));
         g.drawOval((int)(x-r), (int)(y-r), (int)(r*2), (int)(r*2));
         g.setStroke(new BasicStroke(1));
 
-        // Eyes — beady, yellow sclera
-        float eyeOff = r * 0.32f;
-        g.setColor(new Color(0xFFFF88));
-        g.fillOval((int)(x-eyeOff-2), (int)(y-r*0.2f-2), 5, 5);
-        g.fillOval((int)(x+eyeOff-2), (int)(y-r*0.2f-2), 5, 5);
-        g.setColor(Color.BLACK);
-        g.fillOval((int)(x-eyeOff-1), (int)(y-r*0.2f-1), 3, 3);
-        g.fillOval((int)(x+eyeOff-1), (int)(y-r*0.2f-1), 3, 3);
-
-        // Snaggle grin
-        g.setColor(new Color(0x222222));
-        g.setStroke(new BasicStroke(1));
-        g.drawArc((int)(x-r*0.4f), (int)(y+r*0.1f), (int)(r*0.8f), (int)(r*0.5f), 0, -180);
-        // Tooth
-        g.setColor(Color.WHITE);
-        g.fillRect((int)(x-1), (int)(y+r*0.12f), 2, 3);
-    }
-
-    private void drawOrc(Graphics2D g, float x, float y, float r, Color body) {
-        // Helmet
-        g.setColor(new Color(0x546E7A));
-        g.fillArc((int)(x-r), (int)(y-r), (int)(r*2), (int)(r*2), 0, 180);
-        int[] helmetSpike = {(int)(x-2),(int)(x+2),(int)x};
-        int[] helmetSpikeY = {(int)(y-r),(int)(y-r),(int)(y-r-6)};
-        g.fillPolygon(helmetSpike, helmetSpikeY, 3);
-
-        // Body
-        g.setColor(body);
-        g.fillOval((int)(x-r), (int)(y-r), (int)(r*2), (int)(r*2));
-        // Skin highlight
-        g.setColor(new Color(body.getRed()+30 < 256 ? body.getRed()+30:255,
-                             body.getGreen()+30 < 256 ? body.getGreen()+30:255,
-                             body.getBlue(), 140));
-        g.fillOval((int)(x-r*0.5f),(int)(y-r*0.6f),(int)(r*0.6f),(int)(r*0.5f));
-
-        g.setColor(body.darker());
-        g.setStroke(new BasicStroke(1.5f));
-        g.drawOval((int)(x-r),(int)(y-r),(int)(r*2),(int)(r*2));
-        g.setStroke(new BasicStroke(1));
-
-        // Angry eyes — red tinted
-        float eo = r * 0.28f;
-        g.setColor(new Color(0xFF6666));
-        g.fillOval((int)(x-eo-3),(int)(y-r*0.1f-2),6,5);
-        g.fillOval((int)(x+eo-3),(int)(y-r*0.1f-2),6,5);
-        g.setColor(new Color(0x220000));
-        g.fillOval((int)(x-eo-1),(int)(y-r*0.1f-1),4,3);
-        g.fillOval((int)(x+eo-1),(int)(y-r*0.1f-1),4,3);
-
-        // Tusks
-        g.setColor(new Color(0xF5F5DC));
-        g.fillPolygon(new int[]{(int)(x-r*0.3f),(int)(x-r*0.15f),(int)(x-r*0.25f)},
-                      new int[]{(int)(y+r*0.3f),(int)(y+r*0.3f),(int)(y+r*0.7f)}, 3);
-        g.fillPolygon(new int[]{(int)(x+r*0.15f),(int)(x+r*0.3f),(int)(x+r*0.25f)},
-                      new int[]{(int)(y+r*0.3f),(int)(y+r*0.3f),(int)(y+r*0.7f)}, 3);
-    }
-
-    private void drawTroll(Graphics2D g, float x, float y, float r, Color body) {
-        // Mossy "rock" body — slightly lumpy
-        g.setColor(body.darker());
-        g.fillOval((int)(x-r-1),(int)(y-r+2),(int)(r*2+4),(int)(r*2));
-
-        g.setColor(body);
-        g.fillOval((int)(x-r),(int)(y-r),(int)(r*2),(int)(r*2));
-
-        // Mossy patches
-        g.setColor(new Color(51, 105, 30, 100));
-        g.fillOval((int)(x-r*0.6f),(int)(y-r*0.7f),(int)(r*0.8f),(int)(r*0.5f));
-        g.fillOval((int)(x+r*0.2f),(int)(y-r*0.4f),(int)(r*0.6f),(int)(r*0.4f));
-
-        g.setColor(body.darker().darker());
-        g.setStroke(new BasicStroke(2f));
-        g.drawOval((int)(x-r),(int)(y-r),(int)(r*2),(int)(r*2));
-        g.setStroke(new BasicStroke(1));
-
-        // Eyes — small sunken
+        // Grumpy eyes
         float eo = r * 0.3f;
         g.setColor(new Color(0xFFEB3B));
-        g.fillOval((int)(x-eo-3),(int)(y-r*0.15f-3),7,6);
-        g.fillOval((int)(x+eo-3),(int)(y-r*0.15f-3),7,6);
+        g.fillOval((int)(x-eo-3), (int)(y-r*0.15f-3), 7, 6);
+        g.fillOval((int)(x+eo-3), (int)(y-r*0.15f-3), 7, 6);
         g.setColor(new Color(0x111100));
-        g.fillOval((int)(x-eo-1),(int)(y-r*0.15f-1),4,4);
-        g.fillOval((int)(x+eo-1),(int)(y-r*0.15f-1),4,4);
+        g.fillOval((int)(x-eo-1), (int)(y-r*0.15f-1), 4, 4);
+        g.fillOval((int)(x+eo-1), (int)(y-r*0.15f-1), 4, 4);
 
-        // Brow ridge
-        g.setColor(body.darker().darker());
-        g.setStroke(new BasicStroke(2.5f));
-        g.drawLine((int)(x-eo-4),(int)(y-r*0.35f),(int)(x-eo+3),(int)(y-r*0.25f));
-        g.drawLine((int)(x+eo-3),(int)(y-r*0.25f),(int)(x+eo+4),(int)(y-r*0.35f));
+        // Curl vine on top
+        g.setColor(new Color(0x2E7D32));
+        g.setStroke(new BasicStroke(1.5f));
+        g.drawArc((int)(x-r*0.2f), (int)(y-r-6), (int)(r*0.4f), 8, 0, 200);
         g.setStroke(new BasicStroke(1));
-
-        // Wide mouth / snarl
-        g.setColor(new Color(0x111111));
-        g.fillArc((int)(x-r*0.5f),(int)(y+r*0.2f),(int)(r),(int)(r*0.5f),0,-180);
-        g.setColor(new Color(0x8B0000));
-        g.fillArc((int)(x-r*0.4f),(int)(y+r*0.25f),(int)(r*0.8f),(int)(r*0.4f),0,-180);
     }
 
-    private void drawDragon(Graphics2D g, float x, float y, float r, Color body) {
+    private void drawGiantmelon(Graphics2D g, float x, float y, float r, Color body) {
         // Wing animation — flap on animTick
         float flapAngle = (float)Math.sin(animTick * 0.18f) * 0.4f;
 
@@ -318,13 +307,11 @@ public class Enemy {
         gw2.dispose();
 
         // Body
-        g.setColor(body);
+        g.setColor(new Color(0x1B5E20)); // outer green
         g.fillOval((int)(x-r),(int)(y-r),(int)(r*2),(int)(r*2));
-        // Scale texture suggestion
-        g.setColor(new Color(0,0,0,30));
-        for (int i = 0; i < 3; i++) {
-            g.drawArc((int)(x-r*0.6f+i*4),(int)(y-r*0.2f),(int)(r*0.5f),(int)(r*0.3f),0,180);
-        }
+        // Stripe overlay
+        g.setColor(new Color(0x66BB6A));
+        g.fillOval((int)(x-r*0.2f),(int)(y-r),(int)(r*0.4f),(int)(r*2));
 
         g.setColor(body.darker());
         g.setStroke(new BasicStroke(1.5f));
@@ -332,7 +319,7 @@ public class Enemy {
         g.setStroke(new BasicStroke(1));
 
         // Horns
-        g.setColor(new Color(0xFFCC02));
+        g.setColor(new Color(0xC62828));
         int[] hornLx = {(int)(x-r*0.35f),(int)(x-r*0.55f),(int)(x-r*0.2f)};
         int[] hornLy = {(int)(y-r+1),(int)(y-r-7),(int)(y-r-2)};
         g.fillPolygon(hornLx, hornLy, 3);
@@ -358,7 +345,7 @@ public class Enemy {
         }
     }
 
-    private void drawShade(Graphics2D g, float x, float y, float r, Color body) {
+    private void drawBlackseed(Graphics2D g, float x, float y, float r, Color body) {
         // Ghostly pulsing aura
         float pulse = 0.5f + 0.5f*(float)Math.sin(animTick * 0.15f);
         g.setColor(new Color(156, 39, 176, (int)(40*pulse)));
@@ -385,7 +372,7 @@ public class Enemy {
 
         // Hollow glowing eyes
         float eo = r * 0.28f;
-        g.setColor(new Color(0xEE82EE));
+        g.setColor(new Color(0xFF1744));
         g.fillOval((int)(x-eo-2),(int)(y-r*0.15f-2),6,5);
         g.fillOval((int)(x+eo-2),(int)(y-r*0.15f-2),6,5);
         g.setColor(new Color(0xFFFFFF, true));

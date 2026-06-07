@@ -25,10 +25,11 @@ public class GamePanel extends JPanel implements ActionListener {
     private Tower.TType selectedTowerType = null; // ui state for tower placement
     private Tower selectedTower = null;
     private int hoverCol = -1, hoverRow = -1;
-    private Rectangle[] towerButtons = new Rectangle[5];
+    private Rectangle[] towerButtons = new Rectangle[8];
     private Tower.TType[] towerTypes = {
-        Tower.TType.DART, Tower.TType.BOMB, Tower.TType.ICE,
-        Tower.TType.SUPER, Tower.TType.MORTAR
+        Tower.TType.DART,   Tower.TType.BOMB,   Tower.TType.ICE,
+        Tower.TType.SUPER,  Tower.TType.MORTAR,
+        Tower.TType.BANANA, Tower.TType.POISON,  Tower.TType.THORN
     };
 
     private Timer timer;
@@ -36,6 +37,9 @@ public class GamePanel extends JPanel implements ActionListener {
 
     private int[][] decorations;
     private int[][] grassNoise;
+    
+    private static final int BANANA_GENERATION_TICKS = 100; // Ticks per banana generation cycle
+    private int bananaTicks = 0;
 
     private static class FloatText { // currency popups
         float x, y, vy, life, maxLife;
@@ -129,7 +133,8 @@ public class GamePanel extends JPanel implements ActionListener {
         if (!paused && !gameOver && !victory) {
             for (int s=0; s<gameSpeed; s++) update();
             if (autoStart && !waveManager.isWaveActive() && waveManager.hasMoreWaves() && !gameOver && !victory) {
-                selectedTowerType=null; deselectTower(); waveManager.startNextWave();
+                selectedTowerType=null; deselectTower();
+                waveManager.startNextWave();
             }
         }
         floatTexts.removeIf(ft -> { ft.y+=ft.vy; ft.life--; return ft.life<=0; });
@@ -154,7 +159,23 @@ public class GamePanel extends JPanel implements ActionListener {
                 ei.remove();
             }
         }
-
+        if (waveManager.isWaveActive()) {
+            bananaTicks++;
+            if (bananaTicks >= BANANA_GENERATION_TICKS) {
+                bananaTicks = 0;
+                for (Tower t : towers) {
+                    int gold = t.collectBanana();
+                    if (gold > 0) {
+                        currency += gold;
+                        float cx = t.getCol()*Constants.TILE + Constants.TILE/2f;
+                        float cy = t.getRow()*Constants.TILE + Constants.TILE/2f;
+                        floatTexts.add(new FloatText(cx, cy-10, "+$"+gold, new Color(0xFFD700)));
+                    }
+                }
+            }
+        } else {
+            bananaTicks = 0;
+        }
         List<Projectile> newProj = new ArrayList<>();
         for (Tower t : towers) newProj.addAll(t.updateMulti(enemies, enemies));
         projectiles.addAll(newProj);
@@ -499,11 +520,18 @@ public class GamePanel extends JPanel implements ActionListener {
             drawCentered(g, "⚔  WAVE ACTIVE — placement locked", ux, uw, y+11); y+=16;
         }
 
-        String[] names  = {"Dart Monkey","Bomb Shooter","Ice Monkey","Super Monkey","Mortar Monkey"}; // monkey types
-        int[]    costs  = {70, 120, 120, 300, 225};
-        Color[]  dots   = {new Color(0xE53935),new Color(0x546E7A),new Color(0x29B6F6),new Color(0xFFD600),new Color(0x558B2F)};
+        String[] names = {
+            "Dart Monkey","Bomb Shooter","Ice Monkey","Super Monkey","Mortar Monkey",
+            "Banana Farm","Poison Monkey","Thorn Monkey"
+        };
+        int[]   costs = {70, 140, 100, 300, 225, 80, 120, 100};
+        Color[] dots  = {
+            new Color(0xE53935), new Color(0x546E7A), new Color(0x29B6F6),
+            new Color(0xFFD600), new Color(0x558B2F),
+            new Color(0xFFD600), new Color(0x7CB342), new Color(0x795548)
+        };
 
-        for (int i=0;i<5;i++) {
+        for (int i=0;i<8;i++) {
             boolean sel = selectedTowerType==towerTypes[i];
             boolean can = !waveLocked && currency>=costs[i];
             boolean dim = waveLocked || !can;
@@ -573,11 +601,23 @@ public class GamePanel extends JPanel implements ActionListener {
         drawCentered(g, t.getName(), ux, uw, y+14);
         y += 23;
 
-        g.setColor(UI_SUBTEXT); g.setFont(new Font("Monospaced",Font.PLAIN,8));
-        String stats = String.format("DMG:%.0f  RNG:%.1f  SPD:%.0f", t.getDamage(), t.getRange(), t.getFireRate());
-        drawCentered(g, stats, ux, uw, y); y += 12;
-        g.setColor(new Color(0x667788)); g.setFont(new Font("SansSerif",Font.PLAIN,8));
-        drawCentered(g, "Sell: $"+t.sellValue(), ux, uw, y); y += 12;
+        if (t.getTType() == Tower.TType.BANANA) {
+            g.setColor(UI_SUBTEXT); g.setFont(new Font("Monospaced", Font.PLAIN, 8));
+            drawCentered(g, "Passive income tower", ux, uw, y); y += 12;
+            g.setColor(UI_GOLD); g.setFont(new Font("Monospaced", Font.PLAIN, 8));
+            drawCentered(g, "Earns gold automatically", ux, uw, y); y += 12;
+        } else {
+            if (t.getTType() == Tower.TType.BANANA) {
+                g.setColor(UI_SUBTEXT); g.setFont(new Font("Monospaced", Font.PLAIN, 8));
+                drawCentered(g, "Passive income tower", ux, uw, y); y += 12;
+                g.setColor(UI_GOLD); g.setFont(new Font("Monospaced", Font.PLAIN, 8));
+                drawCentered(g, "Earns gold automatically", ux, uw, y); y += 12;
+            } else {
+                g.setColor(UI_SUBTEXT); g.setFont(new Font("Monospaced", Font.PLAIN, 8));
+                String stats = String.format("DMG:%.0f  RNG:%.1f  SPD:%.0f", t.getDamage(), t.getRange(), t.getFireRate());
+                drawCentered(g, stats, ux, uw, y); y += 12;
+            }
+        }
 
         g.setColor(new Color(0x1A2A3A)); g.fillRect(ux+8, y, uw-16, 1); y += 6;
 
@@ -776,7 +816,7 @@ public class GamePanel extends JPanel implements ActionListener {
             if (!waveActive) {
                 for (int i=0;i<towerButtons.length;i++) {
                     if (towerButtons[i]!=null&&towerButtons[i].contains(mx,my)) {
-                        int cost=new int[]{70,120,120,300,225}[i];
+                        int cost=new int[]{70,120,120,300,225, 120, 130, 110}[i];
                         if (currency>=cost) { selectedTowerType=towerTypes[i]; deselectTower(); } return;
                     }
                 }
@@ -810,7 +850,17 @@ public class GamePanel extends JPanel implements ActionListener {
 
     private void deselectTower() { if (selectedTower!=null) { selectedTower.setSelected(false); selectedTower=null; } }
     private int costOf(Tower.TType t) {
-        switch(t) { case DART:return 70; case BOMB:return 120; case ICE:return 120; case SUPER:return 300; case MORTAR:return 225; default:return 999; }
+        switch(t) {
+            case DART:   return 70;
+            case BOMB:   return 140;
+            case ICE:    return 100;
+            case SUPER:  return 300;
+            case MORTAR: return 210;
+            case BANANA: return 80;
+            case POISON: return 120;
+            case THORN:  return 100;
+            default:     return 999;
+        }
     }
     private static int clamp(int v) { return Math.max(0,Math.min(255,v)); }
 }

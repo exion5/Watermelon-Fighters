@@ -48,11 +48,11 @@ public class WaveManager {
         waveActive = true;
 
         List<Enemy.Type> types = new ArrayList<>();
-        for (int i=0; i<def[0]; i++) types.add(Enemy.Type.GOBLIN);
-        for (int i=0; i<def[1]; i++) types.add(Enemy.Type.ORC);
-        for (int i=0; i<def[2]; i++) types.add(Enemy.Type.TROLL);
-        for (int i=0; i<def[3]; i++) types.add(Enemy.Type.DRAGON);
-        for (int i=0; i<def[4]; i++) types.add(Enemy.Type.SHADE);
+        for (int i=0; i<def[0]; i++) types.add(Enemy.Type.SEEDLING);
+        for (int i=0; i<def[1]; i++) types.add(Enemy.Type.RIND);
+        for (int i=0; i<def[2]; i++) types.add(Enemy.Type.MELON);
+        for (int i=0; i<def[3]; i++) types.add(Enemy.Type.GIANTMELON);
+        for (int i=0; i<def[4]; i++) types.add(Enemy.Type.BLACKSEED);
 
         Collections.shuffle(types);
         spawnQueue.addAll(types);

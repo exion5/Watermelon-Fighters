@@ -3,7 +3,7 @@ import java.awt.geom.*;
 import java.util.List;
 
 public class Tower {
-    public enum TType { DART, BOMB, ICE, SUPER, MORTAR }
+    public enum TType { DART, BOMB, ICE, SUPER, MORTAR, BANANA, POISON, THORN }
 
     private int col, row;
     private TType ttype;
@@ -15,8 +15,7 @@ public class Tower {
     private float targetAngle = 0; // smooth barrel rotation
     private boolean selected = false;
 
-    // Skill tree
-    private int pathA = 0;
+    private int pathA = 0; // skill tree paths
     private int pathB = 0;
 
     // Derived flags
@@ -25,11 +24,17 @@ public class Tower {
     private boolean multiShot  = false;
     private boolean slowField  = false;
     private int auraSlowTicks  = 0;
+    private int bananaTimer   = 0;
+    private int bananaInterval = 300; // ticks between payouts
+    private int bananaPayout  = 10;
+    private int pierceRange   = 3;    // tiles the thorn travels
+    private float poisonDmg   = 0;    // extra poison damage per tick
+    private float poisonDuration = 180f;
+
     private static final int AURA_INTERVAL = 30;
     private static final int[] PATH_COSTS  = {100, 200, 400};
 
-    // ── Animation state ────────────────────────────────────────────────
-    private float animTick    = 0;
+    private float animTick    = 0; // animation state
     private float muzzleFlash = 0;  // countdown after firing, drives muzzle glow
     private float idlePhase   = 0;  // per-tower random offset
     // Upgrade flash
@@ -43,20 +48,25 @@ public class Tower {
         applyStats();
     }
 
-    // ── Stats ──────────────────────────────────────────────────────────
-    private void applyStats() {
+    private void applyStats() { // overall stats of monkeys
         switch (ttype) {
             case DART:  cost=80;  range=3.5f; damage=18;  fireRate=38;  color=new Color(0xE53935); break;
             case BOMB:  cost=150; range=2.5f; damage=60;  fireRate=90;  color=new Color(0x37474F); break;
             case ICE:   cost=120; range=3.0f; damage=8;   fireRate=50;  color=new Color(0x29B6F6); break;
             case SUPER: cost=200; range=4.0f; damage=25;  fireRate=20;  color=new Color(0xFFD600); break;
             case MORTAR:cost=175; range=5.0f; damage=80;  fireRate=120; color=new Color(0x6D4C41); break;
+            case BANANA: cost=120; range=0f;   damage=0;  fireRate=0;   color=new Color(0xFFD600);
+                        bananaInterval=300; bananaPayout=10; break;
+            case POISON: cost=130; range=3.0f; damage=12; fireRate=45;  color=new Color(0x7CB342);
+                        poisonDmg=3; poisonDuration=180f; break;
+            case THORN:  cost=110; range=3.5f; damage=20; fireRate=55;  color=new Color(0x795548);
+                        pierceRange=3; break;
         }
         multiShot = false; slowField = false; splashMult = 1.0f; slowMult = 1.0f;
         applyPathA(); applyPathB();
     }
 
-    private void applyPathA() {
+    private void applyPathA() { // apply path A upgrades to stats
         switch (ttype) {
             case DART:
                 if (pathA >= 1) damage *= 1.4f;
@@ -78,9 +88,21 @@ public class Tower {
                 if (pathA >= 1) damage *= 1.6f;
                 if (pathA >= 2) { damage *= 2.0f; splashMult *= 1.2f; }
                 if (pathA >= 3) { damage *= 2.8f; splashMult *= 1.5f; fireRate *= 0.8f; } break;
+            case BANANA:
+                if (pathA >= 1) bananaPayout = 15;
+                if (pathA >= 2) bananaPayout = 22;
+                if (pathA >= 3) bananaPayout = 35; break;
+            case POISON:
+                if (pathA >= 1) poisonDmg *= 1.5f;
+                if (pathA >= 2) poisonDmg *= 2.0f;
+                if (pathA >= 3) poisonDmg *= 3.0f; break;
+            case THORN:
+                if (pathA >= 1) pierceRange = 4;
+                if (pathA >= 2) pierceRange = 6;
+                if (pathA >= 3) pierceRange = 9; break;
         }
     }
-    private void applyPathB() {
+    private void applyPathB() { // apply path B upgrades to stats
         switch (ttype) {
             case DART:
                 if (pathB >= 1) range *= 1.3f;
@@ -102,22 +124,35 @@ public class Tower {
                 if (pathB >= 1) splashMult *= 1.4f;
                 if (pathB >= 2) { splashMult *= 1.8f; range *= 1.2f; }
                 if (pathB >= 3) { splashMult *= 2.4f; range *= 1.5f; damage *= 1.6f; } break;
+            case BANANA:
+                if (pathB >= 1) bananaInterval = 220;
+                if (pathB >= 2) bananaInterval = 150;
+                if (pathB >= 3) bananaInterval = 90; break;
+            case POISON:
+                if (pathB >= 1) fireRate = Math.max(5, fireRate*0.75f);
+                if (pathB >= 2) fireRate = Math.max(5, fireRate*0.55f);
+                if (pathB >= 3) fireRate = Math.max(5, fireRate*0.35f); break;
+            case THORN:
+                if (pathB >= 1) damage *= 1.5f;
+                if (pathB >= 2) damage *= 2.0f;
+                if (pathB >= 3) damage *= 3.0f; break;
         }
     }
 
-    // ── Update / fire ──────────────────────────────────────────────────
-    public List<Projectile> updateMulti(List<Enemy> enemies, List<Enemy> allEnemies) {
+    public List<Projectile> updateMulti(List<Enemy> enemies, List<Enemy> allEnemies) { // returns list of projectiles to spawn (multi-shot), also updates tower state
         List<Projectile> result = new java.util.ArrayList<>();
         animTick++;
         if (muzzleFlash > 0) muzzleFlash--;
         if (upgradeFlash > 0) upgradeFlash--;
-
-        // Smooth barrel rotation toward target angle
         float diff = targetAngle - angle;
-        // Normalize to [-PI, PI]
         while (diff >  Math.PI) diff -= (float)(Math.PI*2);
         while (diff < -Math.PI) diff += (float)(Math.PI*2);
         angle += diff * 0.18f;
+
+        if (ttype == TType.BANANA) {
+            bananaTimer++;
+            return result; // handled externally via getBananaGold()
+        }
 
         if (slowField) {
             auraSlowTicks++;
@@ -152,10 +187,13 @@ public class Tower {
             case ICE:    pt = Projectile.PType.FROST_BOLT;   break;
             case SUPER:  pt = Projectile.PType.LASER_BEAM;   break;
             case MORTAR: pt = Projectile.PType.MORTAR_SHELL; splash = 60*splashMult; break;
+            case POISON: pt = Projectile.PType.POISON_DART; break;
+            case THORN:  pt = Projectile.PType.THORN;       break;
             default:     pt = Projectile.PType.DART;         break;
         }
         float projSpeed = ttype==TType.SUPER ? 0 : ttype==TType.MORTAR ? 4f : 7f;
-        result.add(new Projectile(cx, cy, target, damage, projSpeed, pt, splash, allEnemies));
+        result.add(new Projectile(cx, cy, target, damage, projSpeed, pt, splash, allEnemies,
+            poisonDmg, poisonDuration, pierceRange));
 
         if (multiShot) {
             float[] offsets = {-0.25f, 0.25f};
@@ -167,6 +205,13 @@ public class Tower {
         }
         return result;
     }
+
+    public int collectBanana() {
+        if (ttype != TType.BANANA) return 0;
+        return bananaPayout;
+    }
+
+    public void resetBananaTimer() { bananaTimer = 0; }
 
     public Projectile update(List<Enemy> enemies, List<Enemy> allEnemies) {
         List<Projectile> list = updateMulti(enemies, allEnemies);
@@ -203,8 +248,7 @@ public class Tower {
         return best;
     }
 
-    // ── Skill tree ─────────────────────────────────────────────────────
-    public int getPathA() { return pathA; }
+    public int getPathA() { return pathA; } // skill trees
     public int getPathB() { return pathB; }
 
     public boolean canUpgradePathA() {
@@ -234,14 +278,16 @@ public class Tower {
     public void upgradePathA() { if (canUpgradePathA()) { pathA++; upgradeFlash=UPGRADE_DURATION; applyStats(); } }
     public void upgradePathB() { if (canUpgradePathB()) { pathB++; upgradeFlash=UPGRADE_DURATION; applyStats(); } }
 
-    // ── Path metadata ──────────────────────────────────────────────────
-    public String[] getPathANames() {
+    public String[] getPathANames() { // paths
         switch (ttype) {
             case DART:   return new String[]{"Sharp Darts","Razor Wind","Storm"};
             case BOMB:   return new String[]{"Bigger Bombs","Frag Shells","MOAB Buster"};
             case ICE:    return new String[]{"Deep Freeze","Permafrost","Absolute Zero"};
             case SUPER:  return new String[]{"Plasma Beam","Solar Flare","Sun God"};
             case MORTAR: return new String[]{"Heavy Shell","Shrapnel","Artillery"};
+            case BANANA: return new String[]{"Ripe Bunch","Mega Bunch","Banana Plantation"};
+            case POISON: return new String[]{"Toxic Darts","Venom","Neurotoxin"};
+            case THORN:  return new String[]{"Long Thorns","Bramble","Thornwall"};
             default: return new String[]{"T1","T2","T3"};
         }
     }
@@ -252,6 +298,9 @@ public class Tower {
             case ICE:    return new String[]{"Wide Aura","Ice Field","Blizzard"};
             case SUPER:  return new String[]{"Rapid Fire","Hypersonic","Overdrive"};
             case MORTAR: return new String[]{"Wide Blast","Siege Mode","Annihilator"};
+            case BANANA: return new String[]{"Quick Harvest","Fast Farm","Supermarket"};
+            case POISON: return new String[]{"Quick Shot","Blowpipe","Rapid Venom"};
+            case THORN:  return new String[]{"Heavy Thorns","Spike","Razorback"};
             default: return new String[]{"T1","T2","T3"};
         }
     }
@@ -262,6 +311,9 @@ public class Tower {
             case ICE:    return new String[]{"2x slow duration","3x slow +20% DMG","5x slow +60% DMG"};
             case SUPER:  return new String[]{"+60% DMG","+120% DMG +RNG","+200% DMG, faster"};
             case MORTAR: return new String[]{"+60% DMG","+100% DMG +splash","+180% DMG, faster"};
+            case BANANA: return new String[]{"+5 gold/tick","+12 gold/tick","+25 gold/tick"};
+            case POISON: return new String[]{"1.5x poison DMG","2x poison DMG","3x poison DMG"};
+            case THORN:  return new String[]{"Pierce 4 tiles","Pierce 6 tiles","Pierce 9 tiles"};
             default: return new String[]{"Tier 1","Tier 2","Tier 3"};
         }
     }
@@ -272,19 +324,36 @@ public class Tower {
             case ICE:    return new String[]{"+30% RNG, aura","+60% RNG, stronger","+100% RNG +40% DMG"};
             case SUPER:  return new String[]{"30% faster","55% faster +20% DMG","75% faster +DMG"};
             case MORTAR: return new String[]{"+40% splash","+80% splash +RNG","+140% splash +DMG"};
+            case BANANA: return new String[]{"Faster payout","Much faster","Very fast payout"};
+            case POISON: return new String[]{"25% faster","45% faster","65% faster"};
+            case THORN:  return new String[]{"1.5x DMG","2x DMG","3x DMG"};
             default: return new String[]{"Tier 1","Tier 2","Tier 3"};
         }
     }
     public String getPathALabel() {
         switch (ttype) {
-            case DART:return"Power"; case BOMB:return"Damage"; case ICE:return"Freeze";
-            case SUPER:return"Beam"; case MORTAR:return"Power"; default:return"Path A";
+            case DART:return"Power"; 
+            case BOMB:return"Damage"; 
+            case ICE:return"Freeze";
+            case SUPER:return"Beam"; 
+            case MORTAR:return"Power";
+            case BANANA: return "Yield";  
+            case POISON: return "Venom"; 
+            case THORN: return "Pierce";
+            default:return"Path A";
         }
     }
     public String getPathBLabel() {
         switch (ttype) {
-            case DART:return"Range"; case BOMB:return"Speed"; case ICE:return"Aura";
-            case SUPER:return"Speed"; case MORTAR:return"Blast"; default:return"Path B";
+            case DART:return"Range"; 
+            case BOMB:return"Speed"; 
+            case ICE:return"Aura";
+            case SUPER:return"Speed"; 
+            case MORTAR:return"Blast"; 
+            case BANANA: return "Speed";  
+            case POISON: return "Speed"; 
+            case THORN: return "Power";
+            default:return"Path B";
         }
     }
     public int sellValue() {
@@ -294,7 +363,6 @@ public class Tower {
         return (int)(spent*0.6f);
     }
 
-    // ── Drawing ────────────────────────────────────────────────────────
     public void draw(Graphics2D g) {
         int px = col*Constants.TILE, py = row*Constants.TILE;
         int cx = px+Constants.TILE/2,  cy = py+Constants.TILE/2;
@@ -396,6 +464,9 @@ public class Tower {
             case ICE:    drawIceMonkey(g, cx, cy);    break;
             case SUPER:  drawSuperMonkey(g, cx, cy);  break;
             case MORTAR: drawMortarMonkey(g, cx, cy); break;
+            case BANANA: drawBananaFarm(g, cx, cy);   break;
+            case POISON: drawPoisonMonkey(g, cx, cy); break;
+            case THORN:  drawThornMonkey(g, cx, cy);  break;
         }
     }
 
@@ -710,8 +781,184 @@ public class Tower {
                 g2.setStroke(new BasicStroke(1.5f));
                 g2.drawLine(3, -3, 3, 3);
                 break;
+            case BANANA:
+                break;
+            case POISON:
+                // Blowpipe
+                g2.setColor(new Color(0x4E342E));
+                g2.setStroke(new BasicStroke(3, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                g2.drawLine(4, 0, 16, 0);
+                g2.setColor(new Color(0x7CB342));
+                g2.setStroke(new BasicStroke(1.5f));
+                g2.drawLine(4, 0, 15, 0);
+                // Drip at tip
+                g2.setColor(new Color(0xAED581));
+                g2.fillOval(14, -3, 6, 6);
+                g2.setColor(new Color(0x558B2F));
+                g2.setStroke(new BasicStroke(1.2f));
+                g2.drawOval(14, -3, 6, 6);
+                break;
+            case THORN:
+                // Wooden shaft with thorn tip
+                g2.setColor(new Color(0x5D4037));
+                g2.setStroke(new BasicStroke(3, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+                g2.drawLine(4, 0, 14, 0);
+                g2.setColor(new Color(0x795548));
+                g2.setStroke(new BasicStroke(1.8f));
+                g2.drawLine(4, 0, 13, 0);
+                // Sharp thorn tip
+                g2.setColor(new Color(0x3E2723));
+                g2.fillPolygon(new int[]{12, 19, 12}, new int[]{-4, 0, 4}, 3);
+                g2.setColor(new Color(0x6D4C41));
+                g2.drawLine(12, -2, 18, 0);
+                break;
         }
         g2.setStroke(new BasicStroke(1));
+    }
+
+    private void drawBananaFarm(Graphics2D g, int cx, int cy) {
+        // Wooden crate base
+        g.setColor(new Color(0x8D6E63));
+        g.fillRoundRect(cx-11, cy-6, 22, 14, 4, 4);
+        g.setColor(new Color(0x6D4C41));
+        g.setStroke(new BasicStroke(1.2f));
+        g.drawRoundRect(cx-11, cy-6, 22, 14, 4, 4);
+        g.drawLine(cx, cy-6, cx, cy+8);
+        g.drawLine(cx-11, cy+1, cx+11, cy+1);
+        g.setStroke(new BasicStroke(1));
+
+        // Three bananas on top
+        g.setColor(new Color(0xFFD600));
+        g.fillArc(cx-10, cy-16, 10, 12, 0, 200);
+        g.fillArc(cx-3,  cy-17, 10, 12, 0, 200);
+        g.fillArc(cx+4,  cy-16, 10, 12, 0, 200);
+        g.setColor(new Color(0xF9A825));
+        g.setStroke(new BasicStroke(1.5f));
+        g.drawArc(cx-10, cy-16, 10, 12, 0, 200);
+        g.drawArc(cx-3,  cy-17, 10, 12, 0, 200);
+        g.drawArc(cx+4,  cy-16, 10, 12, 0, 200);
+        g.setStroke(new BasicStroke(1));
+
+        // Brown tips
+        g.setColor(new Color(0x5D4037));
+        g.fillOval(cx-10, cy-11, 3, 3);
+        g.fillOval(cx-3,  cy-12, 3, 3);
+        g.fillOval(cx+4,  cy-11, 3, 3);
+
+        // Gold shimmer at higher tiers
+        if (pathA >= 2 || pathB >= 2) {
+            float shimmer = 0.4f + 0.3f*(float)Math.sin(animTick*0.08f);
+            g.setColor(new Color(255, 220, 0, (int)(50*shimmer)));
+            g.fillOval(cx-13, cy-18, 26, 26);
+        }
+    }
+
+    private void drawPoisonMonkey(Graphics2D g, int cx, int cy) {
+        // Toxic hood
+        g.setColor(new Color(0x558B2F));
+        g.fillArc(cx-11, cy-15, 22, 18, 0, 180);
+        g.setColor(new Color(0x7CB342));
+        g.setStroke(new BasicStroke(1.5f));
+        g.drawArc(cx-11, cy-15, 22, 18, 0, 180);
+        g.drawLine(cx-11, cy-6, cx+11, cy-6);
+        g.setStroke(new BasicStroke(1));
+
+        // Dripping poison drop on hood
+        g.setColor(new Color(0xAED581));
+        g.fillOval(cx-2, cy-17, 5, 5);
+        g.fillOval(cx-1, cy-13, 3, 5);
+
+        // Ears
+        g.setColor(new Color(0x8D6E63));
+        g.fillOval(cx-13, cy-4, 5, 7); g.fillOval(cx+8, cy-4, 5, 7);
+        g.setColor(new Color(0xBCAAA4));
+        g.fillOval(cx-12, cy-3, 3, 5); g.fillOval(cx+9, cy-3, 3, 5);
+
+        // Body
+        g.setColor(new Color(0x8D6E63));
+        g.fillOval(cx-11, cy-10, 22, 20);
+        g.setColor(new Color(0xF5CBA7));
+        g.fillOval(cx-7, cy-5, 14, 12);
+
+        // Green tinted eyes — sinister
+        g.setColor(new Color(0x76FF03));
+        g.fillOval(cx-5, cy-4, 4, 3); g.fillOval(cx+1, cy-4, 4, 3);
+        g.setColor(new Color(0x1B5E20));
+        g.fillOval(cx-4, cy-4, 2, 2); g.fillOval(cx+2, cy-4, 2, 2);
+
+        // Nose
+        g.setColor(new Color(0xA0522D));
+        g.fillOval(cx-2, cy+1, 4, 3);
+
+        g.setColor(new Color(0x558B2F));
+        g.setStroke(new BasicStroke(1.3f));
+        g.drawOval(cx-11, cy-10, 22, 20);
+        g.setStroke(new BasicStroke(1));
+
+        // Poison aura pulse at A2+
+        if (pathA >= 2) {
+            float pulse = 0.3f + 0.3f*(float)Math.sin(animTick*0.1f);
+            g.setColor(new Color(100, 200, 0, (int)(45*pulse)));
+            g.fillOval(cx-14, cy-13, 28, 26);
+        }
+    }
+
+    private void drawThornMonkey(Graphics2D g, int cx, int cy) {
+        // Thorn crown — spikes around top
+        g.setColor(new Color(0x4E342E));
+        for (int a = -70; a <= 70; a += 28) {
+            double rad = Math.toRadians(a - 90);
+            int sx = cx + (int)(8*Math.cos(rad));
+            int sy = cy + (int)(8*Math.sin(rad)) - 3;
+            int tipX = cx + (int)(15*Math.cos(rad));
+            int tipY = cy + (int)(15*Math.sin(rad)) - 3;
+            g.setStroke(new BasicStroke(2.5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            g.drawLine(sx, sy, tipX, tipY);
+        }
+        g.setColor(new Color(0x795548));
+        for (int a = -70; a <= 70; a += 28) {
+            double rad = Math.toRadians(a - 90);
+            int tipX = cx + (int)(15*Math.cos(rad));
+            int tipY = cy + (int)(15*Math.sin(rad)) - 3;
+            g.fillOval(tipX-2, tipY-2, 4, 4);
+        }
+        g.setStroke(new BasicStroke(1));
+
+        // Ears
+        g.setColor(new Color(0x8D6E63));
+        g.fillOval(cx-13, cy-4, 5, 7); g.fillOval(cx+8, cy-4, 5, 7);
+        g.setColor(new Color(0xBCAAA4));
+        g.fillOval(cx-12, cy-3, 3, 5); g.fillOval(cx+9, cy-3, 3, 5);
+
+        // Body
+        g.setColor(new Color(0x8D6E63));
+        g.fillOval(cx-11, cy-10, 22, 20);
+        g.setColor(new Color(0xF5CBA7));
+        g.fillOval(cx-7, cy-5, 14, 12);
+
+        // Determined eyes
+        g.setColor(new Color(0x3E2723));
+        g.fillOval(cx-5, cy-4, 3, 3); g.fillOval(cx+2, cy-4, 3, 3);
+        g.setColor(Color.WHITE);
+        g.fillOval(cx-4, cy-5, 1, 1); g.fillOval(cx+3, cy-5, 1, 1);
+
+        // Nose
+        g.setColor(new Color(0xA0522D));
+        g.fillOval(cx-2, cy+1, 4, 3);
+
+        g.setColor(new Color(0x4E342E));
+        g.setStroke(new BasicStroke(1.3f));
+        g.drawOval(cx-11, cy-10, 22, 20);
+        g.setStroke(new BasicStroke(1));
+
+        // Extra thorns on body at A2+
+        if (pathA >= 2) {
+            g.setColor(new Color(0x3E2723));
+            g.setStroke(new BasicStroke(2f));
+            g.drawLine(cx-11, cy-3, cx-16, cy-7);
+            g.drawLine(cx+11, cy-3, cx+16, cy-7);
+            g.setStroke(new BasicStroke(1));
+        }
     }
 
     public void drawRangePreview(Graphics2D g) {
@@ -740,8 +987,15 @@ public class Tower {
     public void setSelected(boolean s){ selected=s; }
     public String getName() {
         switch(ttype) {
-            case DART:return"Dart Monkey"; case BOMB:return"Bomb Shooter"; case ICE:return"Ice Monkey";
-            case SUPER:return"Super Monkey"; case MORTAR:return"Mortar Monkey"; default:return"Monkey";
+            case DART:return"Dart Monkey"; 
+            case BOMB:return"Bomb Shooter"; 
+            case ICE:return"Ice Monkey";
+            case SUPER:return"Super Monkey"; 
+            case MORTAR:return"Mortar Monkey";
+            case BANANA: return "Banana Farm";
+            case POISON: return "Poison Monkey";
+            case THORN:  return "Thorn Monkey";
+            default:return"Monkey";
         }
     }
 }

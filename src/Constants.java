@@ -31,5 +31,8 @@ public class Constants {
         {"Ice Monkey", 120, 3.0, 8, 50, new java.awt.Color(0x29B6F6)},
         {"Super Monkey", 200, 4.0, 25, 20, new java.awt.Color(0xFFD600)},
         {"Mortar Monkey", 175, 5.0, 80, 120, new java.awt.Color(0x558B2F)},
+        {"Banana Farm",   120, 0.0, 0,  0,  new java.awt.Color(0xFFD600)},
+        {"Poison Monkey", 130, 3.0, 12, 45, new java.awt.Color(0x7CB342)},
+        {"Thorn Monkey",  110, 3.5, 20, 55, new java.awt.Color(0x795548)},
     };
 }
