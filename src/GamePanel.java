@@ -477,11 +477,11 @@ public class GamePanel extends JPanel implements ActionListener {
         y += wbH + 15;
 
         int speedCardTop = y; // speed changes and auto button
-        y = drawCard(g, ux, y, uw, 54, () -> {
+        y = drawCard(g, ux, y-50, uw, 54, () -> {
             int yy = speedCardTop - 54;
             g.setColor(UI_SUBTEXT); g.setFont(new Font("SansSerif", Font.BOLD, 8));
             drawCentered(g, "SPEED", ux, uw, yy+13);
-            int[] spds = {1,2,4}; String[] sLbls = {"1×","2×","4×"};
+            int[] spds = {1,2,4}; String[] sLbls = {"Normal","2×","4×"};
             int sw = (uw-20)/3-2;
             for (int i=0;i<3;i++) {
                 int sx2 = ux+8+i*(sw+4);
@@ -503,14 +503,14 @@ public class GamePanel extends JPanel implements ActionListener {
             g.setColor(aBg); g.fillRoundRect(ux+8, yy+40, uw-16, 10, 4,4);
             g.setColor(autoStart ? new Color(0x44AA44) : new Color(0x1E3A5F));
             g.setStroke(autoStart ? new BasicStroke(1.5f):new BasicStroke(1));
-            g.drawRoundRect(ux+8, yy+40, uw-16, 10, 4,4);
+            g.drawRoundRect(ux+8, yy+40, uw-16, 14, 4,4);
             g.setStroke(new BasicStroke(1));
             g.setColor(autoStart ? new Color(0x66FF66) : new Color(0x334455));
-            g.fillOval(ux+11, yy+42, 8, 8);
+            g.fillOval(ux+11, yy+43, 8, 8);
             g.setColor(autoStart ? new Color(0xAAFFAA):UI_SUBTEXT);
             g.setFont(new Font("SansSerif", Font.BOLD, 8));
             g.drawString(autoStart?"AUTO ON":"AUTO OFF", ux+24, yy+50);
-            autoButtonBounds = new Rectangle(ux+8, yy+40, uw-16, 10);
+            autoButtonBounds = new Rectangle(ux+8, yy+40, uw-16, 14);
         });
         y += 4;
 
@@ -524,7 +524,9 @@ public class GamePanel extends JPanel implements ActionListener {
             "Dart Monkey","Bomb Shooter","Ice Monkey","Super Monkey","Mortar Monkey",
             "Banana Farm","Poison Monkey","Thorn Monkey"
         };
-        int[]   costs = {70, 140, 100, 300, 225, 80, 120, 100};
+        int[] costs = {costOf(Tower.TType.DART), costOf(Tower.TType.BOMB), costOf(Tower.TType.ICE),
+               costOf(Tower.TType.SUPER), costOf(Tower.TType.MORTAR), costOf(Tower.TType.BANANA),
+               costOf(Tower.TType.POISON), costOf(Tower.TType.THORN)};
         Color[] dots  = {
             new Color(0xE53935), new Color(0x546E7A), new Color(0x29B6F6),
             new Color(0xFFD600), new Color(0x558B2F),
@@ -567,7 +569,9 @@ public class GamePanel extends JPanel implements ActionListener {
         }
 
         y += 2;
-        g.setColor(new Color(0x1A2A3A)); g.fillRect(ux+6, y, uw-12, 1); y += 5;
+        g.setColor(new Color(0x1A2A3A)); 
+        g.fillRect(ux+6, y, uw-12, 1); 
+        y += 5;
         if (selectedTower!=null) drawTowerInfo(g, ux, uw, y, waveLocked);
         else {
             g.setColor(UI_SUBTEXT); g.setFont(new Font("SansSerif", Font.ITALIC, 9));
@@ -595,8 +599,10 @@ public class GamePanel extends JPanel implements ActionListener {
         int pA=t.getPathA(), pB=t.getPathB();
         boolean aLock=t.isPathAHardLocked(), bLock=t.isPathBHardLocked();
 
-        g.setColor(new Color(0x12203A)); g.fillRoundRect(ux+6, y, uw-12, 20, 6,6);
-        g.setColor(UI_ACCENT); g.setStroke(new BasicStroke(1)); g.drawRoundRect(ux+6,y,uw-12,20,6,6); g.setStroke(new BasicStroke(1));
+        g.setColor(new Color(0x12203A)); 
+        g.fillRoundRect(ux+6, y, uw-12, 28, 6,6);
+        g.setColor(UI_ACCENT); g.setStroke(new BasicStroke(1)); 
+        g.drawRoundRect(ux+6,y,uw-12,28,6,6); g.setStroke(new BasicStroke(1));
         g.setColor(UI_TEXT); g.setFont(new Font("Georgia",Font.BOLD,11));
         drawCentered(g, t.getName(), ux, uw, y+14);
         y += 23;
@@ -619,7 +625,7 @@ public class GamePanel extends JPanel implements ActionListener {
             }
         }
 
-        g.setColor(new Color(0x1A2A3A)); g.fillRect(ux+8, y, uw-16, 1); y += 6;
+        g.setColor(new Color(0x1A2A3A)); g.fillRect(ux+8, y-3, uw-16, 1); y += 6;
 
         g.setColor(new Color(0xBBCCDD)); g.setFont(new Font("SansSerif",Font.BOLD,8));
         drawCentered(g, "SKILL  TREE", ux, uw, y); y += 12;
@@ -816,8 +822,7 @@ public class GamePanel extends JPanel implements ActionListener {
             if (!waveActive) {
                 for (int i=0;i<towerButtons.length;i++) {
                     if (towerButtons[i]!=null&&towerButtons[i].contains(mx,my)) {
-                        int cost=new int[]{70,120,120,300,225, 120, 130, 110}[i];
-                        if (currency>=cost) { selectedTowerType=towerTypes[i]; deselectTower(); } return;
+                        if (currency>=costOf(towerTypes[i])) { selectedTowerType=towerTypes[i]; deselectTower(); } return;
                     }
                 }
                 if (selectedTower!=null) {

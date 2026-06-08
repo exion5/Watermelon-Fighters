@@ -8,6 +8,7 @@ public class Tower {
     private int col, row;
     private TType ttype;
     private float range, damage, fireRate;
+    private float baseRange = 0f;
     private int cost;
     private Color color;
     private int fireCooldown = 0;
@@ -46,21 +47,22 @@ public class Tower {
         this.col = col; this.row = row; this.ttype = ttype;
         idlePhase = (float)(Math.random() * Math.PI * 2);
         applyStats();
+        baseRange = range; // capture post-applyStats base range for body scale
     }
 
     private void applyStats() { // overall stats of monkeys
         switch (ttype) {
-            case DART:  cost=80;  range=3.5f; damage=18;  fireRate=38;  color=new Color(0xE53935); break;
-            case BOMB:  cost=150; range=2.5f; damage=60;  fireRate=90;  color=new Color(0x37474F); break;
-            case ICE:   cost=120; range=3.0f; damage=8;   fireRate=50;  color=new Color(0x29B6F6); break;
-            case SUPER: cost=200; range=4.0f; damage=25;  fireRate=20;  color=new Color(0xFFD600); break;
-            case MORTAR:cost=175; range=5.0f; damage=80;  fireRate=120; color=new Color(0x6D4C41); break;
-            case BANANA: cost=120; range=0f;   damage=0;  fireRate=0;   color=new Color(0xFFD600);
+            case DART:  cost=70;  range=3.5f; damage=20;  fireRate=38;  color=new Color(0xE53935); break;
+            case BOMB:  cost=140; range=2.5f; damage=60;  fireRate=90;  color=new Color(0x37474F); break;
+            case ICE:   cost=100; range=3.0f; damage=10;   fireRate=60;  color=new Color(0x29B6F6); break;
+            case SUPER: cost=300; range=4.0f; damage=25;  fireRate=20;  color=new Color(0xFFD600); break;
+            case MORTAR:cost=225; range=5.0f; damage=80;  fireRate=120; color=new Color(0x6D4C41); break;
+            case BANANA: cost=80; range=0f;   damage=0;  fireRate=0;   color=new Color(0xFFD600);
                         bananaInterval=300; bananaPayout=10; break;
-            case POISON: cost=130; range=3.0f; damage=12; fireRate=45;  color=new Color(0x7CB342);
-                        poisonDmg=3; poisonDuration=180f; break;
-            case THORN:  cost=110; range=3.5f; damage=20; fireRate=55;  color=new Color(0x795548);
-                        pierceRange=3; break;
+            case POISON: cost=120; range=3.0f; damage=12; fireRate=45;  color=new Color(0x7CB342);
+                        poisonDmg=4; poisonDuration=250f; break;
+            case THORN:  cost=100; range=4.0f; damage=20; fireRate=55;  color=new Color(0x795548);
+                        pierceRange=4; break;
         }
         multiShot = false; slowField = false; splashMult = 1.0f; slowMult = 1.0f;
         applyPathA(); applyPathB();
@@ -77,9 +79,9 @@ public class Tower {
                 if (pathA >= 2) { damage *= 1.8f; splashMult *= 1.4f; }
                 if (pathA >= 3) { damage *= 2.5f; splashMult *= 1.8f; } break;
             case ICE:
-                if (pathA >= 1) slowMult = 2.0f;
-                if (pathA >= 2) { slowMult = 3.0f; damage *= 1.2f; }
-                if (pathA >= 3) { slowMult = 5.0f; damage *= 1.6f; } break;
+                if (pathA >= 1) slowMult = 2.5f;
+                if (pathA >= 2) { slowMult = 5.0f; damage *= 1.2f; }
+                if (pathA >= 3) { slowMult = 8.0f; damage *= 1.6f; } break;
             case SUPER:
                 if (pathA >= 1) damage *= 1.6f;
                 if (pathA >= 2) { damage *= 2.2f; range *= 1.15f; }
@@ -97,9 +99,9 @@ public class Tower {
                 if (pathA >= 2) poisonDmg *= 2.0f;
                 if (pathA >= 3) poisonDmg *= 3.0f; break;
             case THORN:
-                if (pathA >= 1) pierceRange = 4;
-                if (pathA >= 2) pierceRange = 6;
-                if (pathA >= 3) pierceRange = 9; break;
+                if (pathA >= 1) { pierceRange = 6; range *= 1.5f; }
+                if (pathA >= 2) { pierceRange = 8; range *= 1.33f; }
+                if (pathA >= 3) { pierceRange = 10; range *= 1.25f; } break;
         }
     }
     private void applyPathB() { // apply path B upgrades to stats
@@ -308,12 +310,12 @@ public class Tower {
         switch (ttype) {
             case DART:   return new String[]{"+40% DMG","+70% DMG +20% RNG","3-dart storm"};
             case BOMB:   return new String[]{"+50% DMG +splash","+80% DMG +splash","+150% DMG +splash"};
-            case ICE:    return new String[]{"2x slow duration","3x slow +20% DMG","5x slow +60% DMG"};
+            case ICE:    return new String[]{"2.5x slow duration","5x slow +20% DMG","8x slow +60% DMG"};
             case SUPER:  return new String[]{"+60% DMG","+120% DMG +RNG","+200% DMG, faster"};
             case MORTAR: return new String[]{"+60% DMG","+100% DMG +splash","+180% DMG, faster"};
             case BANANA: return new String[]{"+5 gold/tick","+12 gold/tick","+25 gold/tick"};
             case POISON: return new String[]{"1.5x poison DMG","2x poison DMG","3x poison DMG"};
-            case THORN:  return new String[]{"Pierce 4 tiles","Pierce 6 tiles","Pierce 9 tiles"};
+            case THORN:  return new String[]{"Pierce 6 tiles","Pierce 9 tiles","Pierce 12 tiles"};
             default: return new String[]{"Tier 1","Tier 2","Tier 3"};
         }
     }
@@ -402,10 +404,12 @@ public class Tower {
         for (int i=0;i<pathB;i++) { g.setColor(new Color(0x29B6F6)); g.fillOval(px+Constants.TILE-8-i*6, py+3, 5, 5); }
 
         // Subtle idle breathing scale on the monkey body
-        float idlePulse = 1.0f + 0.025f*(float)Math.sin(animTick*0.06f + idlePhase);
+        float rangeScale = (baseRange > 0f) ? Math.min(range / baseRange, 1.5f) : 1.0f;
+        float idlePulse  = 1.0f + 0.025f*(float)Math.sin(animTick*0.06f + idlePhase);
+        float bodyScale  = rangeScale * idlePulse;
         Graphics2D gm = (Graphics2D)g.create();
         gm.translate(cx, cy);
-        gm.scale(idlePulse, idlePulse);
+        gm.scale(bodyScale, bodyScale);
         gm.translate(-cx, -cy);
         drawMonkeyBody(gm, cx, cy);
         gm.dispose();
