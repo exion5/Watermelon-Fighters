@@ -57,8 +57,8 @@ public class Tower {
             case ICE:   cost=100; range=3.0f; damage=10;   fireRate=60;  color=new Color(0x29B6F6); break;
             case SUPER: cost=300; range=4.0f; damage=25;  fireRate=20;  color=new Color(0xFFD600); break;
             case MORTAR:cost=225; range=5.0f; damage=80;  fireRate=120; color=new Color(0x6D4C41); break;
-            case BANANA: cost=80; range=0f;   damage=0;  fireRate=0;   color=new Color(0xFFD600);
-                        bananaInterval=300; bananaPayout=10; break;
+            case BANANA: cost=100; range=0f;   damage=0;  fireRate=0;   color=new Color(0xFFD600);
+                        bananaInterval=400; bananaPayout=5; break;
             case POISON: cost=120; range=3.0f; damage=12; fireRate=45;  color=new Color(0x7CB342);
                         poisonDmg=4; poisonDuration=250f; break;
             case THORN:  cost=100; range=4.0f; damage=20; fireRate=55;  color=new Color(0x795548);

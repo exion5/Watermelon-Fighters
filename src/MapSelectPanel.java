@@ -11,6 +11,7 @@ public class MapSelectPanel extends JPanel {
 
     private int hoveredIndex = -1;
     private final JFrame parentFrame;
+    private final String username;
 
     // Card layout constants
     private static final int CARD_W  = 180;
@@ -18,8 +19,9 @@ public class MapSelectPanel extends JPanel {
     private static final int CARD_GAP = 22;
     private static final int PREVIEW_H = 110; // mini-map preview height inside card
 
-    public MapSelectPanel(JFrame parentFrame) {
+    public MapSelectPanel(JFrame parentFrame, String username) {
         this.parentFrame = parentFrame;
+        this.username = username;
         setPreferredSize(new Dimension(Constants.TOTAL_WIDTH, Constants.GAME_HEIGHT));
         setBackground(new Color(0x0A0A18));
 
@@ -150,6 +152,16 @@ public class MapSelectPanel extends JPanel {
         g.setFont(new Font("SansSerif", Font.PLAIN, 10));
         drawWrapped(g, map.description, x+8, y+PREVIEW_H+44, CARD_W-16, 14);
 
+        // Best wave for this map
+        int best = readBestWave(username, index);
+        int score = readBestScore(username, index);
+        String bestStr = best == 0 ? "Best: --" + "       Score : " + score : (best >= 15 ? "★ Completed!" + "       Score : " + score : "Best: Wave " + best + "       Score : " + score);
+        Color bestCol = best >= 15 ? new Color(0xFFD700) : (best > 0 ? new Color(0x80CBC4) : new Color(0x445566));
+        g.setColor(bestCol);
+        g.setFont(new Font("SansSerif", Font.BOLD, 9));
+        FontMetrics bfm = g.getFontMetrics();
+        g.drawString(bestStr, x + (CARD_W - bfm.stringWidth(bestStr)) / 2, y + PREVIEW_H + 60);
+
         // "Play" button at bottom
         Color btnBg = hovered ? map.accentColor : new Color(0x1E3A2A);
         Color btnFg = hovered ? Color.WHITE : new Color(0x80CBC4);
@@ -247,9 +259,6 @@ public class MapSelectPanel extends JPanel {
         g.drawString(hint, (getWidth()-fm.stringWidth(hint))/2, getHeight()-18);
     }
 
-    // ------------------------------------------------------------------ //
-    //  Hit-test: which card index is at screen position (mx, my)?         //
-    // ------------------------------------------------------------------ //
     private int cardIndexAt(int mx, int my) {
         int totalW = MapData.ALL.length * CARD_W + (MapData.ALL.length-1)*CARD_GAP;
         int startX = (getWidth() - totalW) / 2;
@@ -261,9 +270,28 @@ public class MapSelectPanel extends JPanel {
         return -1;
     }
 
-    // ------------------------------------------------------------------ //
-    //  Launch game with selected map                                       //
-    // ------------------------------------------------------------------ //
+    private int readBestWave(String user, int mapIndex) {
+        try {
+            java.util.List<String> lines = java.nio.file.Files.readAllLines(java.nio.file.Paths.get("Registration.txt"));
+            for (int i = 0; i + 11 < lines.size(); i += 12) {
+                if (lines.get(i).trim().equals(user))
+                    return Integer.parseInt(lines.get(i + 2 + mapIndex).trim());
+            }
+        } catch (Exception ignored) {}
+        return 0;
+    }
+
+    private int readBestScore(String user, int mapIndex) {
+        try {
+            java.util.List<String> lines = java.nio.file.Files.readAllLines(java.nio.file.Paths.get("Registration.txt"));
+            for (int i = 0; i + 11 < lines.size(); i += 12) {
+                if (lines.get(i).trim().equals(user))
+                    return Integer.parseInt(lines.get(i + 7 + mapIndex).trim());
+            }
+        } catch (Exception ignored) {}
+        return 0;
+    }
+
     private void launchGame(int mapIndex) {
         parentFrame.getContentPane().removeAll();
         GamePanel comp = new GamePanel(MapData.ALL[mapIndex]);

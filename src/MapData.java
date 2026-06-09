@@ -98,7 +98,7 @@ public class MapData {
     public static final MapData[] ALL = { // all map options with their paths and colors
         new MapData(
             "Meadow Loop",
-            "Classic S-curve through green fields",
+            "S-curve through green fields",
             PATH_MEADOW,
             new Color(0x2E7D32), new Color(0x388E3C),
             new Color(0xC2A45A),
@@ -106,7 +106,7 @@ public class MapData {
         ),
         new MapData(
             "Desert Zigzag",
-            "Harsh vertical drops across scorched sand",
+            "Harsh verticals across sand",
             PATH_DESERT,
             new Color(0xB8860B), new Color(0xDAA520),
             new Color(0xD2691E),
@@ -114,7 +114,7 @@ public class MapData {
         ),
         new MapData(
             "Spiral Vortex",
-            "Winding spiral — enemies travel a long road",
+            "Winding spirals across the map",
             PATH_SPIRAL,
             new Color(0x1A237E), new Color(0x283593),
             new Color(0x9E9E9E),
@@ -122,7 +122,7 @@ public class MapData {
         ),
         new MapData(
             "River Fork",
-            "Follow the river — limited tower spots",
+            "Follow the river, limited tower spots",
             PATH_RIVER,
             new Color(0x1B5E20), new Color(0x2E7D32),
             new Color(0x1565C0),

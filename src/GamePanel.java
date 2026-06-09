@@ -12,6 +12,8 @@ public class GamePanel extends JPanel implements ActionListener {
     private int currency  = Constants.STARTING_CURRENCY;
     private int score     = 0;
     private boolean gameOver = false, victory = false, paused = false;
+    private boolean waveSaved = false;
+    private boolean scoreSaved = false;
     private int gameSpeed = 1;
     private boolean autoStart = false;
 
@@ -152,7 +154,7 @@ public class GamePanel extends JPanel implements ActionListener {
             Enemy en = ei.next();
             if (en.hasReached()) {
                 lives -= en.getDamage(); ei.remove();
-                if (lives<=0) { lives=0; gameOver=true; return; }
+                if (lives<=0) { lives=0; gameOver=true; saveBestWave(); saveBestScore(); return; }
             } else if (en.isDead()) {
                 currency += en.getReward(); score += en.getReward();
                 floatTexts.add(new FloatText(en.getX(), en.getY()-10, "+$"+en.getReward(), UI_GOLD));
@@ -189,7 +191,7 @@ public class GamePanel extends JPanel implements ActionListener {
             floatTexts.add(new FloatText(Constants.GAME_WIDTH/2f, Constants.GAME_HEIGHT/2f - 30,
                 "Wave Clear!  +$"+bonus, new Color(0x88FF88)));
             waveManager.waveComplete();
-            if (!waveManager.hasMoreWaves()) victory=true;
+            if (!waveManager.hasMoreWaves()) { victory=true; saveBestWave(); saveBestScore(); }
         }
     }
 
@@ -861,11 +863,75 @@ public class GamePanel extends JPanel implements ActionListener {
             case ICE:    return 100;
             case SUPER:  return 300;
             case MORTAR: return 210;
-            case BANANA: return 80;
+            case BANANA: return 100;
             case POISON: return 120;
             case THORN:  return 100;
             default:     return 999;
         }
     }
+    private void saveBestWave() {
+        if (waveSaved) return;
+        waveSaved = true;
+        String user = Main.currentUser;
+        if (user == null || user.isEmpty()) return;
+
+        // Find map index
+        int mapIndex = -1;
+        for (int i = 0; i < MapData.ALL.length; i++) {
+            if (MapData.ALL[i].name.equals(currentMap.name)) { mapIndex = i; break; }
+        }
+        if (mapIndex < 0) return;
+
+        int wave = waveManager.getCurrentWave();
+
+        try {
+            java.util.List<String> lines = new java.util.ArrayList<>(
+                java.nio.file.Files.readAllLines(java.nio.file.Paths.get("Registration.txt")));
+            for (int i = 0; i + 11 < lines.size(); i += 12) {
+                if (lines.get(i).trim().equals(user)) {
+                    int lineIdx = i + 2 + mapIndex;
+                    int prev = Integer.parseInt(lines.get(lineIdx).trim());
+                    if (wave > prev) {
+                        lines.set(lineIdx, String.valueOf(wave));
+                        java.nio.file.Files.write(java.nio.file.Paths.get("Registration.txt"), lines);
+                    }
+                    return;
+                }
+            }
+        } catch (Exception ignored) {}
+    }
+
+    private void saveBestScore() {
+        if (scoreSaved) return;
+        scoreSaved = true;
+        String user = Main.currentUser;
+        if (user == null || user.isEmpty()) return;
+
+        // Find map index
+        int mapIndex = -1;
+        for (int i = 0; i < MapData.ALL.length; i++) {
+            if (MapData.ALL[i].name.equals(currentMap.name)) { mapIndex = i; break; }
+        }
+        if (mapIndex < 0) return;
+
+        int currentScore = score;
+
+        try {
+            java.util.List<String> lines = new java.util.ArrayList<>(
+                java.nio.file.Files.readAllLines(java.nio.file.Paths.get("Registration.txt")));
+            for (int i = 0; i + 11 < lines.size(); i += 12) {
+                if (lines.get(i).trim().equals(user)) {
+                    int lineIdx = i + 7 + mapIndex;
+                    int prev = Integer.parseInt(lines.get(lineIdx).trim());
+                    if (currentScore > prev) {
+                        lines.set(lineIdx, String.valueOf(currentScore));
+                        java.nio.file.Files.write(java.nio.file.Paths.get("Registration.txt"), lines);
+                    }
+                    return;
+                }
+            }
+        } catch (Exception ignored) {}
+    }
+
     private static int clamp(int v) { return Math.max(0,Math.min(255,v)); }
 }
