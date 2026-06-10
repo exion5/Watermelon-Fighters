@@ -3,10 +3,6 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.*;
 
-/**
- * Full-screen map selection panel.
- * Shows 5 map cards; clicking one starts the game with that map.
- */
 public class MapSelectPanel extends JPanel {
 
     private int hoveredIndex = -1;
@@ -18,6 +14,8 @@ public class MapSelectPanel extends JPanel {
     private static final int CARD_H  = 220;
     private static final int CARD_GAP = 22;
     private static final int PREVIEW_H = 110; // mini-map preview height inside card
+
+    private java.awt.Rectangle backButtonBounds = new java.awt.Rectangle();
 
     public MapSelectPanel(JFrame parentFrame, String username) {
         this.parentFrame = parentFrame;
@@ -34,15 +32,17 @@ public class MapSelectPanel extends JPanel {
         });
         addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent e) {
+                if (backButtonBounds.contains(e.getX(), e.getY())) {
+                    Main.onBackToMain();
+                    return;
+                }
                 int idx = cardIndexAt(e.getX(), e.getY());
                 if (idx >= 0) launchGame(idx);
             }
         });
     }
 
-    // ------------------------------------------------------------------ //
-    //  Rendering                                                           //
-    // ------------------------------------------------------------------ //
+    // rendering
     @Override
     protected void paintComponent(Graphics g0) {
         super.paintComponent(g0);
@@ -54,6 +54,7 @@ public class MapSelectPanel extends JPanel {
         drawTitle(g);
         drawCards(g);
         drawFooter(g);
+        drawBackButton(g);
     }
 
     private void drawBackground(Graphics2D g) {
@@ -174,9 +175,7 @@ public class MapSelectPanel extends JPanel {
         g.drawString(play, x+20+(CARD_W-40-fm.stringWidth(play))/2, y+CARD_H-36+17);
     }
 
-    /**
-     * Draws a tiny path-preview of the map inside the card.
-     */
+    // draws the small preview of the map
     private void drawMiniMap(Graphics2D g, MapData map, int ox, int oy, int w, int h) {
         // Background (grass)
         g.setColor(map.grassA);
@@ -231,7 +230,7 @@ public class MapSelectPanel extends JPanel {
         g.drawRoundRect(ox, oy, w, h, 6, 6);
     }
 
-    /** Very simple word-wrap for card description text. */
+    // Very simple word-wrap for card description text
     private void drawWrapped(Graphics2D g, String text, int x, int y, int maxW, int lineH) {
         FontMetrics fm = g.getFontMetrics();
         StringBuilder line = new StringBuilder();
@@ -292,13 +291,28 @@ public class MapSelectPanel extends JPanel {
         return 0;
     }
 
+    private void drawBackButton(Graphics2D g) {
+        int btnW = 140, btnH = 30;
+        int btnX = 16;
+        int btnY = getHeight() - btnH - 16;
+
+        g.setColor(new Color(0x1A1A2E));
+        g.fillRoundRect(btnX, btnY, btnW, btnH, 8, 8);
+        g.setColor(new Color(0x3A5068));
+        g.setStroke(new BasicStroke(1.5f));
+        g.drawRoundRect(btnX, btnY, btnW, btnH, 8, 8);
+        g.setStroke(new BasicStroke(1));
+
+        g.setColor(new Color(0x90A4AE));
+        g.setFont(new Font("SansSerif", Font.BOLD, 11));
+        FontMetrics fm = g.getFontMetrics();
+        String label = "← Main Menu";
+        g.drawString(label, btnX + (btnW - fm.stringWidth(label)) / 2, btnY + btnH / 2 + 4);
+
+        backButtonBounds = new java.awt.Rectangle(btnX, btnY, btnW, btnH);
+    }
+
     private void launchGame(int mapIndex) {
-        parentFrame.getContentPane().removeAll();
-        GamePanel comp = new GamePanel(MapData.ALL[mapIndex]);
-        parentFrame.add(comp);
-        parentFrame.pack();
-        parentFrame.revalidate();
-        parentFrame.repaint();
-        comp.requestFocusInWindow();
+        Main.onMapSelected(MapData.ALL[mapIndex]);
     }
 }

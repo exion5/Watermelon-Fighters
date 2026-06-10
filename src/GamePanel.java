@@ -2,25 +2,24 @@ import javax.swing.*;
 import javax.swing.Timer;
 import java.awt.*;
 import java.awt.event.*;
-import java.awt.geom.*;
 import java.util.*;
 import java.util.List;
 
 public class GamePanel extends JPanel implements ActionListener {
 
-    private int lives     = Constants.STARTING_LIVES; // main game state
-    private int currency  = Constants.STARTING_CURRENCY;
-    private int score     = 0;
+    private int lives = Constants.STARTING_LIVES; // main game state
+    private int currency = Constants.STARTING_CURRENCY;
+    private int score = 0;
     private boolean gameOver = false, victory = false, paused = false;
     private boolean waveSaved = false;
     private boolean scoreSaved = false;
     private int gameSpeed = 1;
     private boolean autoStart = false;
 
-    private List<Tower>     towers     = new ArrayList<>(); // arrays of the entities in the game
-    private List<Enemy>     enemies    = new ArrayList<>();
+    private List<Tower> towers = new ArrayList<>(); // arrays of the entities in the game
+    private List<Enemy> enemies = new ArrayList<>();
     private List<Projectile>projectiles= new ArrayList<>();
-    private WaveManager waveManager    = new WaveManager();
+    private WaveManager waveManager = new WaveManager();
 
     private Set<Long> pathTiles = new HashSet<>();
 
@@ -33,9 +32,6 @@ public class GamePanel extends JPanel implements ActionListener {
         Tower.TType.SUPER,  Tower.TType.MORTAR,
         Tower.TType.BANANA, Tower.TType.POISON,  Tower.TType.THORN
     };
-
-    private Timer timer;
-    private MapData currentMap;
 
     private int[][] decorations;
     private int[][] grassNoise;
@@ -64,7 +60,10 @@ public class GamePanel extends JPanel implements ActionListener {
     private static final Color COL_B      = new Color(0x29B6F6);
     private static final Color COL_LOCKED = new Color(0x2E2E3E);
 
-    public GamePanel()            { this(MapData.ALL[0]); }
+    private Timer timer;
+    private MapData currentMap;
+
+    public GamePanel(){ this(MapData.ALL[0]); }
     public GamePanel(MapData map) {
         this.currentMap = map;
         Enemy.activePath = map.path;
@@ -96,9 +95,10 @@ public class GamePanel extends JPanel implements ActionListener {
         setFocusable(true);
         timer = new Timer(16, this);
         timer.start();
+        Sound.playPlaylist(new String[]{"Audio/Forever.wav", "Audio/Reminder.wav"});
     }
 
-    private void buildPathSet() {
+    private void buildPathSet() { // precompute a set of path tile positions for quick lookup during rendering and tower placement
         for (int[] pt : currentMap.path) pathTiles.add((long)pt[0]*1000+pt[1]);
     }
     private boolean isPathTile(int c, int r) { return pathTiles.contains((long)c*1000+r); }
@@ -107,7 +107,7 @@ public class GamePanel extends JPanel implements ActionListener {
         return false;
     }
 
-    private void buildDecorations() {
+    private void buildDecorations() { // randomly place some decorative elements on the map (trees, rocks, flowers) on non-path tiles
         Random rng = new Random(currentMap.name.hashCode()); // deterministic per map
         List<int[]> list = new ArrayList<>();
         for (int row=0; row<Constants.ROWS; row++) {
@@ -123,7 +123,7 @@ public class GamePanel extends JPanel implements ActionListener {
         decorations = list.toArray(new int[0][]);
     }
 
-    private void buildGrassNoise() {
+    private void buildGrassNoise() { // makes the grass look different
         grassNoise = new int[Constants.COLS][Constants.ROWS];
         Random rng = new Random(currentMap.name.hashCode() * 31L);
         for (int c=0;c<Constants.COLS;c++)
@@ -131,19 +131,20 @@ public class GamePanel extends JPanel implements ActionListener {
                 grassNoise[c][r] = rng.nextInt(18) - 9; // -9..+8
     }
 
-    @Override public void actionPerformed(ActionEvent e) { // game loop
+    @Override public void actionPerformed(ActionEvent e) { // main game loop, called by the timer every frame
         if (!paused && !gameOver && !victory) {
             for (int s=0; s<gameSpeed; s++) update();
             if (autoStart && !waveManager.isWaveActive() && waveManager.hasMoreWaves() && !gameOver && !victory) {
                 selectedTowerType=null; deselectTower();
                 waveManager.startNextWave();
+                Sound.sfx("Audio/wave_start.wav");
             }
         }
         floatTexts.removeIf(ft -> { ft.y+=ft.vy; ft.life--; return ft.life<=0; });
         repaint();
     }
 
-    private void update() {
+    private void update() { // main game update logic
         Enemy newEnemy = waveManager.update();
         if (newEnemy!=null) enemies.add(newEnemy);
 
@@ -154,10 +155,12 @@ public class GamePanel extends JPanel implements ActionListener {
             Enemy en = ei.next();
             if (en.hasReached()) {
                 lives -= en.getDamage(); ei.remove();
-                if (lives<=0) { lives=0; gameOver=true; saveBestWave(); saveBestScore(); return; }
+                Sound.sfx("Audio/life_lost.wav");
+                if (lives<=0) { lives=0; gameOver=true; Sound.sfx("Audio/game_over.wav"); saveBestWave(); saveBestScore(); return; }
             } else if (en.isDead()) {
                 currency += en.getReward(); score += en.getReward();
                 floatTexts.add(new FloatText(en.getX(), en.getY()-10, "+$"+en.getReward(), UI_GOLD));
+                Sound.sfx("Audio/enemy_die.wav");
                 ei.remove();
             }
         }
@@ -191,16 +194,17 @@ public class GamePanel extends JPanel implements ActionListener {
             floatTexts.add(new FloatText(Constants.GAME_WIDTH/2f, Constants.GAME_HEIGHT/2f - 30,
                 "Wave Clear!  +$"+bonus, new Color(0x88FF88)));
             waveManager.waveComplete();
-            if (!waveManager.hasMoreWaves()) { victory=true; saveBestWave(); saveBestScore(); }
+            Sound.sfx("Audio/wave_clear.wav");
+            if (!waveManager.hasMoreWaves()) { victory=true; Sound.sfx("Audio/victory.wav"); saveBestWave(); saveBestScore(); }
         }
     }
 
     @Override protected void paintComponent(Graphics g0) { // rendering code - draws the entire game scene each frame
         super.paintComponent(g0);
         Graphics2D g = (Graphics2D) g0;
-        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,      RenderingHints.VALUE_ANTIALIAS_ON);
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
         g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-        g.setRenderingHint(RenderingHints.KEY_RENDERING,         RenderingHints.VALUE_RENDER_QUALITY);
+        g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
 
         g.setColor(new Color(0x050508));
         g.fillRect(0, 0, Constants.GAME_WIDTH, Constants.GAME_HEIGHT);
@@ -269,15 +273,23 @@ public class GamePanel extends JPanel implements ActionListener {
         if (!waveManager.isWaveActive() && hoverCol>=0 && hoverCol<Constants.COLS
                 && hoverRow>=0 && hoverRow<Constants.ROWS && selectedTowerType!=null) {
             boolean canPlace = !isPathTile(hoverCol,hoverRow) && !hasTower(hoverCol,hoverRow);
-            g.setColor(canPlace ? new Color(100,255,120,70) : new Color(255,80,80,70));
+            if (canPlace) {
+                g.setColor(new Color(100, 255, 120, 70));
+            } else {
+                g.setColor(new Color(255, 80, 80, 70));
+            }
             g.fillRect(p+hoverCol*Constants.TILE, p+hoverRow*Constants.TILE, Constants.TILE, Constants.TILE);
-            g.setColor(canPlace ? new Color(100,255,120,150) : new Color(255,80,80,150));
+            if (canPlace) {
+                g.setColor(new Color(100, 255, 120, 150));
+            } else {
+                g.setColor(new Color(255, 80, 80, 150));
+            }
             g.setStroke(new BasicStroke(1.5f));
             g.drawRect(p+hoverCol*Constants.TILE, p+hoverRow*Constants.TILE, Constants.TILE, Constants.TILE);
             g.setStroke(new BasicStroke(1));
         }
 
-        drawPortal(g, currentMap.path[0],                        new Color(0x1565C0), new Color(0x42A5F5), "IN",  p);
+        drawPortal(g, currentMap.path[0], new Color(0x1565C0), new Color(0x42A5F5), "IN",  p);
         drawPortal(g, currentMap.path[currentMap.path.length-1], new Color(0xB71C1C), new Color(0xEF5350), "OUT", p);
     }
 
@@ -400,12 +412,15 @@ public class GamePanel extends JPanel implements ActionListener {
         g.setStroke(new BasicStroke(1));
     }
 
-    private Rectangle waveButtonBounds  = new Rectangle(); // ui sidebar
-    private Rectangle upgradeABounds   = new Rectangle(0,0,0,0);
-    private Rectangle upgradeBBounds   = new Rectangle(0,0,0,0);
+    private Rectangle waveButtonBounds = new Rectangle(); // ui sidebar
+    private Rectangle upgradeABounds = new Rectangle(0,0,0,0);
+    private Rectangle upgradeBBounds = new Rectangle(0,0,0,0);
     private Rectangle sellButtonBounds = new Rectangle(0,0,0,0);
     private Rectangle[] speedButtonBounds = {new Rectangle(), new Rectangle(), new Rectangle()};
     private Rectangle autoButtonBounds = new Rectangle();
+    private Rectangle pauseRestartBounds = new Rectangle();
+    private Rectangle pauseMainMenuBounds = new Rectangle();
+    private Rectangle pauseSkipSongBounds = new Rectangle();
 
     private void drawUI(Graphics2D g) {
         int ux=Constants.GAME_WIDTH, uw=Constants.UI_WIDTH, uh=Constants.GAME_HEIGHT;
@@ -447,7 +462,14 @@ public class GamePanel extends JPanel implements ActionListener {
         yRef[0] = drawCard(g, ux, yRef[0], uw, 36, () -> {
             g.setFont(new Font("SansSerif", Font.BOLD, 10)); // lives
             float lifeRatio = (float)lives / Constants.STARTING_LIVES;
-            Color heartCol = lifeRatio > 0.5f ? new Color(0xFF6B6B) : lifeRatio > 0.25f ? new Color(0xFFC107) : new Color(0xFF1744);
+            Color heartCol;
+            if (lifeRatio > 0.5f) {
+                heartCol = new Color(0xFF6B6B);  // Soft Red (Healthy)
+            } else if (lifeRatio > 0.25f) {
+                heartCol = new Color(0xFFC107);  // Yellow/Orange (Warning)
+            } else {
+                heartCol = new Color(0xFF1744);  // Bright Red (Critical)
+            }
             g.setColor(heartCol);
             g.drawString("♥ " + lives, ux+9, statsY-36+22);
             g.setColor(UI_GOLD); // currency
@@ -455,7 +477,8 @@ public class GamePanel extends JPanel implements ActionListener {
             g.setFont(new Font("Monospaced", Font.BOLD, 10));
             FontMetrics fm = g.getFontMetrics();
             g.drawString(gs, ux+uw-9-fm.stringWidth(gs), statsY-36+22);
-            g.setColor(new Color(0x66AACC)); g.setFont(new Font("SansSerif", Font.PLAIN, 9));
+            g.setColor(new Color(0x66AACC)); 
+            g.setFont(new Font("SansSerif", Font.PLAIN, 9));
             drawCentered(g, "Score: "+score, ux, uw, statsY-36+33); // score
         });
 
@@ -464,14 +487,27 @@ public class GamePanel extends JPanel implements ActionListener {
         y += 4;
         int wbH = 28;
         if (canStart) {
-            g.setColor(new Color(30,120,50,40)); g.fillRoundRect(ux+6, y, uw-12, wbH, 8,8);
-            g.setColor(new Color(50,200,80,25)); g.fillRoundRect(ux+4, y-39, uw-8, wbH+2, 10,10);
+            g.setColor(new Color(30,120,50,40)); 
+            g.fillRoundRect(ux+6, y, uw-12, wbH, 8,8);
+            g.setColor(new Color(50,200,80,25)); 
+            g.fillRoundRect(ux+4, y-39, uw-8, wbH+2, 10,10);
         }
-        Color wBg = canStart ? new Color(0x1B3F20) : new Color(0x12121E);
-        Color wFg = canStart ? new Color(0xAAFFAA) : UI_SUBTEXT;
-        String wLabel = canStart ? "▶  Start Wave " + (waveManager.getCurrentWave()+1)
-                      : waveManager.isWaveActive() ? "⚔  Wave In Progress"
-                      : "✓  All Waves Done";
+        Color wBg;
+        Color wFg;
+        String wLabel;
+        if (canStart) {
+            wBg = new Color(0x1B3F20);
+            wFg = new Color(0xAAFFAA);
+            wLabel = "▶  Start Wave " + (waveManager.getCurrentWave() + 1);
+        } else {
+            wBg = new Color(0x12121E);
+            wFg = UI_SUBTEXT;
+            if (waveManager.isWaveActive()) {
+                wLabel = "⚔  Wave In Progress";
+            } else {
+                wLabel = "✓  All Waves Done";
+            }
+        }
         drawButton(g, ux+6, y-38, uw-12, wbH, wBg, wLabel, wFg);
         if (canStart) { g.setColor(new Color(0x55BB55)); g.setStroke(new BasicStroke(1.5f));
                         g.drawRoundRect(ux+6,y-38,uw-12,wbH,8,8); g.setStroke(new BasicStroke(1)); }
@@ -488,13 +524,26 @@ public class GamePanel extends JPanel implements ActionListener {
             for (int i=0;i<3;i++) {
                 int sx2 = ux+8+i*(sw+4);
                 boolean act = gameSpeed==spds[i];
-                g.setColor(act ? new Color(0x1A3050) : new Color(0x0E0E1A));
+                if (act) {
+                    g.setColor(new Color(0x1A3050));
+                } else {
+                    g.setColor(new Color(0x0E0E1A));
+                }
                 g.fillRoundRect(sx2, yy+17, sw, 18, 4,4);
-                g.setColor(act ? UI_ACCENT : new Color(0x1E3A5F));
-                g.setStroke(act ? new BasicStroke(1.5f) : new BasicStroke(1));
+                if (act) {
+                    g.setColor(UI_ACCENT);
+                    g.setStroke(new BasicStroke(1.5f));
+                } else {
+                    g.setColor(new Color(0x1E3A5F)); // Muted Blue
+                    g.setStroke(new BasicStroke(1f));
+                }
                 g.drawRoundRect(sx2, yy+17, sw, 18, 4,4);
                 g.setStroke(new BasicStroke(1));
-                g.setColor(act ? UI_GOLD : UI_SUBTEXT);
+                if (act) {
+                    g.setColor(UI_GOLD);
+                } else {
+                    g.setColor(UI_SUBTEXT);
+                }
                 g.setFont(new Font("Monospaced", Font.BOLD, 9));
                 FontMetrics fm2 = g.getFontMetrics();
                 g.drawString(sLbls[i], sx2+(sw-fm2.stringWidth(sLbls[i]))/2, yy+30);
@@ -502,8 +551,13 @@ public class GamePanel extends JPanel implements ActionListener {
             }
             // Auto toggle
             Color aBg = autoStart ? new Color(0x152A15) : new Color(0x0E0E1A);
-            g.setColor(aBg); g.fillRoundRect(ux+8, yy+40, uw-16, 10, 4,4);
-            g.setColor(autoStart ? new Color(0x44AA44) : new Color(0x1E3A5F));
+            g.setColor(aBg); 
+            g.fillRoundRect(ux+8, yy+40, uw-16, 10, 4,4);
+            if (autoStart) {
+                g.setColor(new Color(0x44AA44));
+            } else {
+                g.setColor(new Color(0x1E3A5F));
+            }
             g.setStroke(autoStart ? new BasicStroke(1.5f):new BasicStroke(1));
             g.drawRoundRect(ux+8, yy+40, uw-16, 14, 4,4);
             g.setStroke(new BasicStroke(1));
@@ -531,8 +585,8 @@ public class GamePanel extends JPanel implements ActionListener {
                costOf(Tower.TType.POISON), costOf(Tower.TType.THORN)};
         Color[] dots  = {
             new Color(0xE53935), new Color(0x546E7A), new Color(0x29B6F6),
-            new Color(0xFFD600), new Color(0x558B2F),
-            new Color(0xFFD600), new Color(0x7CB342), new Color(0x795548)
+            new Color(0xFFD600), new Color(0x558B2F), new Color(0xFFD600), 
+            new Color(0x7CB342), new Color(0x795548)
         };
 
         for (int i=0;i<8;i++) {
@@ -795,13 +849,68 @@ public class GamePanel extends JPanel implements ActionListener {
     }
 
     private void drawPause(Graphics2D g) {
-        g.setColor(new Color(0,0,0,110)); g.fillRect(0,0,Constants.TOTAL_WIDTH,Constants.GAME_HEIGHT);
-        g.setColor(UI_TEXT); g.setFont(new Font("Georgia",Font.BOLD,38));
-        FontMetrics fm=g.getFontMetrics(); String msg="PAUSED";
-        g.drawString(msg, (Constants.TOTAL_WIDTH-fm.stringWidth(msg))/2, Constants.GAME_HEIGHT/2);
-        g.setFont(new Font("SansSerif",Font.PLAIN,13)); g.setColor(UI_SUBTEXT);
-        String hint="Press P to resume"; fm=g.getFontMetrics();
-        g.drawString(hint, (Constants.TOTAL_WIDTH-fm.stringWidth(hint))/2, Constants.GAME_HEIGHT/2+26);
+        g.setColor(new Color(0, 0, 0, 150));
+        g.fillRect(0, 0, Constants.TOTAL_WIDTH, Constants.GAME_HEIGHT);
+
+        int cx = Constants.TOTAL_WIDTH / 2;
+        int cy = Constants.GAME_HEIGHT / 2;
+
+        // Card
+        int cardW = 320, cardH = 220;
+        int cardX = cx - cardW/2, cardY = cy - cardH/2;
+        g.setColor(new Color(0x111827));
+        g.fillRoundRect(cardX, cardY, cardW, cardH, 16, 16);
+        g.setColor(UI_ACCENT);
+        g.setStroke(new BasicStroke(2f));
+        g.drawRoundRect(cardX, cardY, cardW, cardH, 16, 16);
+        g.setStroke(new BasicStroke(1));
+        g.fillRoundRect(cardX+1, cardY+1, cardW-2, 5, 16, 16);
+        g.fillRect(cardX+1, cardY+4, cardW-2, 5);
+
+        // Title
+        g.setFont(new Font("Georgia", Font.BOLD, 36));
+        g.setColor(UI_TEXT);
+        FontMetrics fm = g.getFontMetrics();
+        g.drawString("PAUSED", cx - fm.stringWidth("PAUSED")/2, cardY + 52);
+
+        g.setFont(new Font("SansSerif", Font.PLAIN, 11));
+        g.setColor(UI_SUBTEXT);
+        fm = g.getFontMetrics();
+        String hint = "Click anywhere to resume  •  P to toggle";
+        g.drawString(hint, cx - fm.stringWidth(hint)/2, cardY + 70);
+
+        // Buttons
+        int btnW = 260, btnH = 32, btnX = cx - btnW/2;
+        int y1 = cardY + 84, y2 = cardY + 124, y3 = cardY + 164;
+
+        drawPauseButton(g, btnX, y1, btnW, btnH, "\u21BA  Restart Map",
+                new Color(0x1A2040), new Color(0x99BBFF), new Color(0x3355AA));
+        drawPauseButton(g, btnX, y2, btnW, btnH, "\u2302  Main Menu",
+                new Color(0x2A0A0A), new Color(0xFF9090), new Color(0x882222));
+
+        // Skip song — small, bottom-right of card
+        int ssW = 100, ssH = 22;
+        int ssX = cardX + cardW - ssW - 10, ssY = cardY + cardH - ssH - 10;
+        drawPauseButton(g, ssX, ssY, ssW, ssH, "\u23ED  Skip Song",
+                new Color(0x0E0E1C), new Color(0x7799BB), new Color(0x1E3A5F));
+
+        pauseRestartBounds  = new Rectangle(btnX, y1, btnW, btnH);
+        pauseMainMenuBounds = new Rectangle(btnX, y2, btnW, btnH);
+        pauseSkipSongBounds = new Rectangle(ssX, ssY, ssW, ssH);
+    }
+
+    private void drawPauseButton(Graphics2D g, int x, int y, int w, int h,
+                                  String label, Color bg, Color fg, Color border) {
+        g.setColor(bg);
+        g.fillRoundRect(x, y, w, h, 8, 8);
+        g.setColor(border);
+        g.setStroke(new BasicStroke(1.5f));
+        g.drawRoundRect(x, y, w, h, 8, 8);
+        g.setStroke(new BasicStroke(1));
+        g.setColor(fg);
+        g.setFont(new Font("SansSerif", Font.BOLD, 11));
+        FontMetrics fm = g.getFontMetrics();
+        g.drawString(label, x + (w - fm.stringWidth(label))/2, y + h/2 + 4);
     }
 
     private void handleHover(MouseEvent e) { // input for hover effects and tile highlights
@@ -813,9 +922,26 @@ public class GamePanel extends JPanel implements ActionListener {
     private void handleClick(MouseEvent e) {
         int p=Constants.MAP_PAD; int mx=e.getX(), my=e.getY();
         boolean waveActive=waveManager.isWaveActive();
+
+        if (paused && !gameOver && !victory) {
+            if (pauseRestartBounds.contains(mx, my)) {
+                timer.stop();
+                SwingUtilities.invokeLater(() -> Main.onMapSelected(currentMap));
+                return;
+            }
+            if (pauseMainMenuBounds.contains(mx, my)) {
+                timer.stop();
+                SwingUtilities.invokeLater(() -> Main.onBackToMain());
+                return;
+            }
+            if (pauseSkipSongBounds.contains(mx, my)) { Sound.nextTrack(); return; }
+            paused = false;
+            return;
+        }
+
         if (mx>=Constants.GAME_WIDTH) {
             if (waveButtonBounds.contains(mx,my)) {
-                if (!waveActive&&waveManager.hasMoreWaves()&&!gameOver&&!victory) { selectedTowerType=null; deselectTower(); waveManager.startNextWave(); }
+                if (!waveActive&&waveManager.hasMoreWaves()&&!gameOver&&!victory) { selectedTowerType=null; deselectTower(); waveManager.startNextWave(); Sound.sfx("Audio/wave_start.wav"); }
                 return;
             }
             int[] spds={1,2,4};
@@ -847,7 +973,7 @@ public class GamePanel extends JPanel implements ActionListener {
         if (col>=Constants.COLS||row>=Constants.ROWS) return;
         if (selectedTowerType!=null) {
             if (!isPathTile(col,row)&&!hasTower(col,row)) {
-                int c=costOf(selectedTowerType); if (currency>=c) { currency-=c; towers.add(new Tower(col,row,selectedTowerType)); }
+                int c=costOf(selectedTowerType); if (currency>=c) { currency-=c; towers.add(new Tower(col,row,selectedTowerType)); Sound.sfx("Audio/tower_place.wav"); }
             }
         } else {
             deselectTower();
@@ -934,4 +1060,10 @@ public class GamePanel extends JPanel implements ActionListener {
     }
 
     private static int clamp(int v) { return Math.max(0,Math.min(255,v)); }
+
+    @Override
+    public void removeNotify() {
+        super.removeNotify();
+        timer.stop();
+    }
 }

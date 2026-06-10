@@ -11,12 +11,12 @@ public class WaveManager {
     private static final int WAVE_BONUS_BASE  = 55; // base bonus for clearing a wave, plus a scaling amount per wave to reward later progress
     private static final int WAVE_BONUS_SCALE = 8;  // +8 per wave
 
-    private static final int[][] WAVE_DEFS = { // each wave definition: number of each enemy type to spawn (Goblin, Orc, Troll, Dragon, Shade)
+    private static final int[][] WAVE_DEFS = { // each wave definition: number of each enemy type to spawn (Seedling, Rind, Melon, GiantMelon, BlackSeed)
         { 5,  0,  0,  0,  0},  // W1  - gentle intro
         { 7,  2,  0,  0,  0},  // W2
-        { 7,  4,  0,  0,  1},  // W3  - first shade
-        { 9,  5,  1,  0,  2},  // W4  - first troll
-        { 8,  7,  2,  1,  3},  // W5  - first dragon
+        { 7,  4,  0,  0,  1},  // W3  - first blackseed
+        { 9,  5,  1,  0,  2},  // W4  - first melon
+        { 8,  7,  2,  1,  3},  // W5  - first giant melon
         {12,  8,  2,  2,  5},  // W6
         {10, 10,  3,  2,  6},  // W7
         {14,  8,  4,  3,  6},  // W8

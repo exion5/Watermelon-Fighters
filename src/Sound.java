@@ -54,10 +54,11 @@ public class Sound { // handles all the sound effects and background music in th
     }
 
     public static void stopBgMusic() { // stops the background music
-        if (background != null && background.isRunning()) {
-            background.stop();
-            background.close();
-            background = null;
+        if (background != null) {
+            Clip clip = background;
+            background = null; // null first so the LineListener doesn't fire playNext()
+            if (clip.isRunning()) clip.stop();
+            clip.close();
         }
     }
 
@@ -67,30 +68,13 @@ public class Sound { // handles all the sound effects and background music in th
     }
 
     private static void applyVolume(Clip clip) { // applies volume to the audio clip
-        if (clip == null) {
-            return;
-        }
+        if (clip == null) return;
         try {
             FloatControl fc = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
-            float dB;
-            if (volume <= 0) {
-                dB = fc.getMinimum();
-            } else {
-                dB = (float)(Math.log10(volume) * 20);
-            }
-            if (dB < fc.getMinimum()) dB = fc.getMinimum();
-            if (dB > fc.getMaximum()) dB = fc.getMaximum();
-            fc.setValue(dB);
-        } catch (Exception e) {
-            try {
-                FloatControl fc = (FloatControl) clip.getControl(FloatControl.Type.VOLUME);
-                float vol = volume;
-                if (vol < fc.getMinimum()) vol = fc.getMinimum();
-                if (vol > fc.getMaximum()) vol = fc.getMaximum();
-                fc.setValue(vol);
-            } catch (Exception ex) {
-                System.out.println("Volume not supported");
-            }
+            float dB = volume <= 0 ? fc.getMinimum() : (float)(Math.log10(volume) * 20);
+            fc.setValue(Math.max(fc.getMinimum(), Math.min(fc.getMaximum(), dB)));
+        } catch (IllegalArgumentException | IllegalStateException ignored) {
+            // MASTER_GAIN not supported on this clip/format — skip silently
         }
     }
 

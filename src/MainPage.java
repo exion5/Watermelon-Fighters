@@ -38,23 +38,27 @@ public class MainPage extends JPanel {
         content.setOpaque(false);
 
         content.add(Box.createVerticalStrut(42));
-        content.add(centeredLabel("🍉",                       titleFont.deriveFont(Font.PLAIN, 44f), TEXT_MAIN));
+        content.add(centeredLabel("🍉", titleFont.deriveFont(Font.PLAIN, 44f), TEXT_MAIN));
         content.add(Box.createVerticalStrut(8));
-        content.add(centeredLabel("WATERMELON FIGHTERS",      titleFont,                             LT_GREEN));
+        content.add(centeredLabel("WATERMELON FIGHTERS", titleFont, LT_GREEN));
         content.add(Box.createVerticalStrut(4));
-        content.add(centeredLabel("Ready to defend the melon?", italicFont.deriveFont(14f),          TEAL));
+        content.add(centeredLabel("Ready to defend the melon?", italicFont.deriveFont(14f), TEAL));
         content.add(Box.createVerticalStrut(10));
         content.add(makeDivider(ACCENT));
         content.add(Box.createVerticalStrut(18));
         content.add(centeredLabel("Welcome back, " + username + "!", labelFont.deriveFont(15f), GOLD));
         content.add(Box.createVerticalStrut(28));
 
-        JButton playBtn = makeButton("▶  PLAY GAME", WM_GREEN, btnFont);
-        JButton quitBtn = makeButton("✕  QUIT",      ACCENT,   btnFont);
+        JButton playBtn  = makeButton("▶  PLAY GAME", WM_GREEN, btnFont);
+        JButton loginBtn = makeButton("← BACK TO LOGIN",   new Color(0x607D8B), btnFont);
+        JButton quitBtn  = makeButton("✕  QUIT", ACCENT, btnFont);
         playBtn.addActionListener(e -> Main.onPlay());
+        loginBtn.addActionListener(e -> Main.onBackToLogin());
         quitBtn.addActionListener(e -> System.exit(0));
 
         content.add(playBtn);
+        content.add(Box.createVerticalStrut(10));
+        content.add(loginBtn);
         content.add(Box.createVerticalStrut(10));
         content.add(quitBtn);
         content.add(Box.createVerticalStrut(20));
@@ -62,16 +66,13 @@ public class MainPage extends JPanel {
         content.add(Box.createVerticalStrut(12));
 
         for (String tip : new String[]{
-                "Place towers on the grass  •  Enemies follow the path",
-                "Survive all 15 waves to win  •  Don't let them reach the end"}) {
+                "Place towers on the grass  |  Enemies follow the path",
+                "Survive all 15 waves to win  |  Don't let them reach the end"}) {
             content.add(centeredLabel(tip, italicFont.deriveFont(10f), TEXT_SUB));
             content.add(Box.createVerticalStrut(4));
         }
 
         content.add(Box.createVerticalGlue());
-        content.add(centeredLabel("ETHAN XIONG & CHARLIE CAMPION  •  Tower Defense Project",
-                italicFont.deriveFont(9f), new Color(0x444466)));
-        content.add(Box.createVerticalStrut(14));
 
         JPanel root = new JPanel(new BorderLayout()) {
             @Override protected void paintComponent(Graphics g0) {
@@ -85,7 +86,7 @@ public class MainPage extends JPanel {
                 g.setStroke(new BasicStroke(1));
                 for (int x = 0; x < w; x += 40) g.drawLine(x, 0, x, h);
                 for (int y = 0; y < h; y += 40) g.drawLine(0, y, w, y);
-                int cw = 420, ch = 510;
+                int cw = 400, ch = 500;
                 int cx = (w - cw) / 2, cy = (h - ch) / 2;
                 for (int d = 18; d >= 1; d--) {
                     g.setColor(new Color(233, 69, 96, 6));
@@ -105,7 +106,19 @@ public class MainPage extends JPanel {
             }
         };
         root.setOpaque(false);
-        root.add(content, BorderLayout.CENTER);
+        JPanel cardWrapper = new JPanel(new GridBagLayout());
+        cardWrapper.setOpaque(false);
+        JPanel cardSizer = new JPanel(new BorderLayout());
+        cardSizer.setOpaque(false);
+        cardSizer.setPreferredSize(new Dimension(400, 500));
+        cardSizer.setMaximumSize(new Dimension(400, 500));
+        cardSizer.add(content, BorderLayout.CENTER);
+        cardWrapper.add(cardSizer);
+        root.add(cardWrapper, BorderLayout.CENTER);
+        JLabel credit = centeredLabel("ETHAN XIONG & CHARLIE CAMPION  |  Tower Defense Project",
+                italicFont.deriveFont(9f), new Color(0x444466));
+        credit.setBorder(BorderFactory.createEmptyBorder(8, 0, 40, 0));
+        root.add(credit, BorderLayout.SOUTH);
         add(root, BorderLayout.CENTER);
     }
 

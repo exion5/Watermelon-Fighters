@@ -3,7 +3,7 @@ import java.awt.*;
 
 public class Main {
 
-    // Shared card container — panels call App.show(...) to navigate
+    // Shared card container and layout for switching between screens
     public static JFrame      frame;
     public static JPanel      cards;
     public static CardLayout  cardLayout;
@@ -30,8 +30,6 @@ public class Main {
         loginPanel = new LoginPage();
         cards.add(loginPanel, "login");
 
-        // MainPage and MapSelectPanel are added lazily (need username / frame ref)
-        // but we still need a placeholder so pack() sizes to the game resolution
         JPanel placeholder = new JPanel();
         placeholder.setPreferredSize(new Dimension(Constants.TOTAL_WIDTH, Constants.GAME_HEIGHT));
         cards.add(placeholder, "placeholder");
@@ -43,29 +41,28 @@ public class Main {
         frame.setVisible(true);
     }
 
-    /** Called by LoginPage once credentials are verified. */
+    // Called by LoginPage once credentials are verified
     public static void onLogin(String username) {
         currentUser = username;
         // Build (or rebuild) MainPage for this user
         mainPanel = new MainPage(username);
         cards.add(mainPanel, "main");
 
-        // Build MapSelectPanel (needs a reference back so it can show the game)
-        // Pass the main frame to the MapSelectPanel constructor (panel needs a reference back)
+        // Build MapSelectPanel 
         mapPanel = new MapSelectPanel(frame, username);
         cards.add(mapPanel, "mapselect");
 
         showCard("main");
     }
 
-    /** Called by MainPage "Play" button. */
+    // Called by MainPage "Play" button
     public static void onPlay() {
         showCard("mapselect");
     }
 
-    /** Called by MapSelectPanel when the player picks a map. */
+    // Called by MapSelectPanel when the player picks a map
     public static void onMapSelected(MapData map) {
-        // Remove old game panel if one exists
+        Sound.stopBgMusic();
         if (gamePanel != null) cards.remove(gamePanel);
         gamePanel = new GamePanel(map);
         cards.add(gamePanel, "game");
@@ -73,7 +70,7 @@ public class Main {
         gamePanel.requestFocusInWindow();
     }
 
-    /** Called by GamePanel (or wherever) to return to map selection. */
+    // Called by GamePanel (or wherever) to return to map selection
     public static void onBackToMapSelect() {
         cards.remove(mapPanel);
         mapPanel = new MapSelectPanel(frame, currentUser);
@@ -82,9 +79,21 @@ public class Main {
         mapPanel.requestFocusInWindow();
     }
 
-    /** Called from anywhere to go back to main/home. */
+    // Called from anywhere to go back to main/home
     public static void onBackToMain() {
+        Sound.stopBgMusic();
+        if (gamePanel != null) { 
+            cards.remove(gamePanel); 
+            gamePanel = null; }
+        mainPanel = new MainPage(currentUser);
+        cards.add(mainPanel, "main");
         showCard("main");
+    }
+
+    // Called by MainPage "Back to Login" button
+    public static void onBackToLogin() {
+        currentUser = "";
+        showCard("login");
     }
 
     private static void showCard(String key) {

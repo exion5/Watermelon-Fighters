@@ -5,13 +5,9 @@ import java.awt.event.*;
 import java.io.PrintWriter;
 import java.util.Scanner;
 
-/**
- * Login / register screen — now a JPanel (no dialog).
- * On successful login calls Main.onLogin(username).
- */
 public class LoginPage extends JPanel {
 
-    // ── Palette ───────────────────────────────────────────────────────────────
+    // palette
     private static final Color BG_DARK   = new Color(0x050510);
     private static final Color BG_PANEL  = new Color(0x111827);
     private static final Color BG_MID    = new Color(0x1A1A2E);
@@ -31,7 +27,7 @@ public class LoginPage extends JPanel {
         setLayout(new BorderLayout());
         setBackground(BG_DARK);
 
-        // ── Fonts ─────────────────────────────────────────────────────────────
+        // fonts
         Font trebuchet, trebuchetItalic;
         try {
             trebuchet       = Font.createFont(Font.TRUETYPE_FONT, new java.io.File("trebuc.ttf")).deriveFont(Font.PLAIN, 13f);
@@ -46,12 +42,12 @@ public class LoginPage extends JPanel {
         final Font italicFont = trebuchetItalic;
         final Font btnFont    = trebuchet.deriveFont(Font.BOLD,  13f);
 
-        // ── Card layout for login ↔ register ──────────────────────────────────
+        // card layout
         CardLayout cl = new CardLayout();
         JPanel showing = new JPanel(cl);
         showing.setOpaque(false);
 
-        // ── LOGIN PAGE ────────────────────────────────────────────────────────
+        // login page
         JPanel loginPage = makeBoxPanel();
         JTextField   loginUser = makeField(bodyFont);
         JPasswordField loginPass = makePassField(bodyFont);
@@ -86,11 +82,11 @@ public class LoginPage extends JPanel {
         });
 
         loginPage.add(Box.createVerticalStrut(36));
-        loginPage.add(centeredLabel("🍉",                       titleFont.deriveFont(Font.PLAIN, 38f), TEXT_MAIN));
+        loginPage.add(centeredLabel("🍉", titleFont.deriveFont(Font.PLAIN, 38f), TEXT_MAIN));
         loginPage.add(Box.createVerticalStrut(6));
-        loginPage.add(centeredLabel("WATERMELON FIGHTERS",      titleFont,                             LT_GREEN));
+        loginPage.add(centeredLabel("WATERMELON FIGHTERS", titleFont, LT_GREEN));
         loginPage.add(Box.createVerticalStrut(4));
-        loginPage.add(centeredLabel("Player Login",             italicFont.deriveFont(14f),            TEAL));
+        loginPage.add(centeredLabel("Player Login", italicFont.deriveFont(14f), TEAL));
         loginPage.add(Box.createVerticalStrut(6));
         loginPage.add(makeDivider(ACCENT));
         loginPage.add(Box.createVerticalStrut(28));
@@ -102,9 +98,9 @@ public class LoginPage extends JPanel {
         loginPage.add(Box.createVerticalStrut(12));
         loginPage.add(toRBtn);
         loginPage.add(Box.createVerticalStrut(20));
-        loginPage.add(centeredLabel("ESC closes  •  All rights reserved", italicFont, TEXT_SUB));
+        loginPage.add(centeredLabel("ESC closes window", italicFont, TEXT_SUB));
 
-        // ── REGISTER PAGE ─────────────────────────────────────────────────────
+        // register page
         JPanel regPage = makeBoxPanel();
         JTextField   regUser = makeField(bodyFont);
         JPasswordField regPass = makePassField(bodyFont);
@@ -157,7 +153,7 @@ public class LoginPage extends JPanel {
         showing.add(loginPage, "login");
         showing.add(regPage,   "register");
 
-        // ── Root — custom card background drawn here ──────────────────────────
+        // custom card background drawn
         JPanel root = new JPanel(new BorderLayout()) {
             @Override protected void paintComponent(Graphics g0) {
                 super.paintComponent(g0);
@@ -190,11 +186,19 @@ public class LoginPage extends JPanel {
             }
         };
         root.setOpaque(false);
-        root.add(showing, BorderLayout.CENTER);
+        JPanel cardWrapper = new JPanel(new GridBagLayout());
+        cardWrapper.setOpaque(false);
+        JPanel cardSizer = new JPanel(new BorderLayout());
+        cardSizer.setOpaque(false);
+        cardSizer.setPreferredSize(new Dimension(400, 500));
+        cardSizer.setMaximumSize(new Dimension(400, 500));
+        cardSizer.add(showing, BorderLayout.CENTER);
+        cardWrapper.add(cardSizer);
+        root.add(cardWrapper, BorderLayout.CENTER);
         add(root, BorderLayout.CENTER);
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────────
+    // helpers 
 
     private JPanel makeBoxPanel() {
         JPanel p = new JPanel();
@@ -256,6 +260,8 @@ public class LoginPage extends JPanel {
         tf.setBorder(BorderFactory.createCompoundBorder(
             new LineBorder(BORDER, 1),
             BorderFactory.createEmptyBorder(8, 12, 8, 12)));
+        tf.setPreferredSize(new Dimension(320, 42));
+        tf.setMinimumSize(new Dimension(320, 42));
         tf.setMaximumSize(new Dimension(320, 42));
         tf.addFocusListener(new FocusAdapter() {
             public void focusGained(FocusEvent e) {

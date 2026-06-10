@@ -25,7 +25,7 @@ public class Enemy {
     private float size;
 
     private float poisonDmg   = 0;
-    private int   poisonTimer = 0;
+    private int poisonTimer = 0;
     private static final int POISON_TICK = 20; // deal damage every 20 frames
     private int poisonTickTimer = 0;
 
@@ -103,21 +103,32 @@ public class Enemy {
 
     private void spawnDeathParticles() { // Burst of particles in a random spread, colour based on enemy type
         particlesSpawned = true;
-        int count = type == Type.MELON ? 18 : type == Type.GIANTMELON ? 22 : 12;
+        int count;
+        switch (type) {
+            case MELON:
+                count = 18;
+                break;
+            case GIANTMELON:
+                count = 22;
+                break;
+            default:
+                count = 12;
+                break;
+        }
         for (int i = 0; i < count; i++) {
             float angle = (float)(Math.random() * Math.PI * 2);
-            float spd   = 0.8f + (float)(Math.random() * 2.5f);
-            float life  = 14 + (float)(Math.random() * 14);
-            int r = Math.min(255, baseColor.getRed()   + (int)(Math.random()*60 - 30));
+            float spd = 0.8f + (float)(Math.random() * 2.5f);
+            float life = 14 + (float)(Math.random() * 14);
+            int r = Math.min(255, baseColor.getRed() + (int)(Math.random()*60 - 30));
             int g2 = Math.min(255, baseColor.getGreen() + (int)(Math.random()*60 - 30));
-            int b = Math.min(255, baseColor.getBlue()  + (int)(Math.random()*60 - 30));
+            int b = Math.min(255, baseColor.getBlue() + (int)(Math.random()*60 - 30));
             particles.add(new Particle(x, y,
                 (float)Math.cos(angle)*spd, (float)Math.sin(angle)*spd - 1.5f,
                 life, new Color(Math.max(0,r), Math.max(0,g2), Math.max(0,b))));
         }
         for (int i = 0; i < 5; i++) { // Extra burst of bright yellow particles for non-trolls/dragons
             float angle = (float)(Math.random()*Math.PI*2);
-            float spd   = 1.0f + (float)(Math.random()*2.0f);
+            float spd = 1.0f + (float)(Math.random()*2.0f);
             particles.add(new Particle(x, y,
                 (float)Math.cos(angle)*spd, (float)Math.sin(angle)*spd - 2f,
                 20, new Color(0xFFD700)));
@@ -129,7 +140,7 @@ public class Enemy {
     }
 
     public void applyPoison(float dmgPerTick, int duration) {
-        poisonDmg   = Math.max(poisonDmg, dmgPerTick);
+        poisonDmg = Math.max(poisonDmg, dmgPerTick);
         poisonTimer = Math.max(poisonTimer, duration);
     }
 
@@ -276,7 +287,7 @@ public class Enemy {
     }
 
     private void drawGiantmelon(Graphics2D g, float x, float y, float r, Color body) {
-        // Wing animation — flap on animTick
+        // Wing flap
         float flapAngle = (float)Math.sin(animTick * 0.18f) * 0.4f;
 
         // Wings (behind body)
@@ -327,17 +338,17 @@ public class Enemy {
         int[] hornRy = {(int)(y-r-2),(int)(y-r-7),(int)(y-r+1)};
         g.fillPolygon(hornRx, hornRy, 3);
 
-        // Slit eyes — glowing orange
+        // eyes
         float eo = r * 0.3f;
         g.setColor(new Color(0xFF6F00));
         g.fillOval((int)(x-eo-3),(int)(y-r*0.1f-3),7,5);
         g.fillOval((int)(x+eo-3),(int)(y-r*0.1f-3),7,5);
-        // Vertical slit pupil
+        // pupil
         g.setColor(Color.BLACK);
         g.fillRect((int)(x-eo),(int)(y-r*0.1f-2),2,4);
         g.fillRect((int)(x+eo),(int)(y-r*0.1f-2),2,4);
 
-        // Flame breath hint when hp < 50%
+        // Flame breath when hp < 50%
         if (hp / maxHp < 0.5f) {
             float phase = (float)Math.sin(animTick * 0.25f);
             g.setColor(new Color(255, 100+(int)(phase*80), 0, 120+(int)(phase*60)));
@@ -346,14 +357,14 @@ public class Enemy {
     }
 
     private void drawBlackseed(Graphics2D g, float x, float y, float r, Color body) {
-        // Ghostly pulsing aura
+        // Ghostly aura
         float pulse = 0.5f + 0.5f*(float)Math.sin(animTick * 0.15f);
         g.setColor(new Color(156, 39, 176, (int)(40*pulse)));
         g.fillOval((int)(x-r*1.6f),(int)(y-r*1.6f),(int)(r*3.2f),(int)(r*3.2f));
         g.setColor(new Color(156, 39, 176, (int)(25*pulse)));
         g.fillOval((int)(x-r*2.0f),(int)(y-r*2.0f),(int)(r*4.0f),(int)(r*4.0f));
 
-        // Wispy cloak tendrils
+        // Wispy cloak limbs
         g.setColor(new Color(74, 0, 88, 160));
         float tendrilBase = (float)Math.sin(animTick * 0.1f) * 2;
         g.fillOval((int)(x-r*0.4f+tendrilBase),(int)(y+r*0.7f),(int)(r*0.6f),(int)(r*0.5f));
@@ -389,9 +400,14 @@ public class Enemy {
         g.fillRoundRect(bx-1, by-1, barW+2, barH+2, 3, 3);
         // Fill
         float ratio = hp / maxHp;
-        Color hpCol = ratio > 0.6f ? new Color(0x4CAF50)
-                    : ratio > 0.3f ? new Color(0xFFC107)
-                    :                new Color(0xF44336);
+        Color hpCol;
+        if (ratio > 0.6f) {
+            hpCol = new Color(0x4CAF50); // Green
+        } else if (ratio > 0.3f) {
+            hpCol = new Color(0xFFC107); // Yellow/Orange
+        } else {
+            hpCol = new Color(0xF44336); // Red
+        }
         g.setColor(hpCol);
         g.fillRoundRect(bx, by, (int)(barW * ratio), barH, 2, 2);
         // Shine
@@ -401,28 +417,27 @@ public class Enemy {
 
     private static Color blend(Color a, Color b, float t) {
         float s = 1-t;
-        return new Color(
-            (int)(a.getRed()*s   + b.getRed()*t),
+        return new Color((int)(a.getRed()*s + b.getRed()*t),
             (int)(a.getGreen()*s + b.getGreen()*t),
-            (int)(a.getBlue()*s  + b.getBlue()*t));
+            (int)(a.getBlue()*s + b.getBlue()*t));
     }
 
     public float getX() { return x; }
     public float getY() { return y; }
-    public boolean isDead()       { return dead; }
-    public boolean hasReached()   { return reached; }
-    public int getReward()        { return reward; }
-    public int getDamage()        { return damage; }
-    public float getHp()          { return hp; }
-    public float getMaxHp()       { return maxHp; }
-    public Type getType()         { return type; }
+    public boolean isDead() { return dead; }
+    public boolean hasReached() { return reached; }
+    public int getReward() { return reward; }
+    public int getDamage() { return damage; }
+    public float getHp() { return hp; }
+    public float getMaxHp() { return maxHp; }
+    public Type getType() { return type; }
 
     public float distanceTraveled() {
         int[][] path = activePath;
         float d = 0;
         for (int i=1; i<=pathIndex && i<path.length; i++) {
             float ax=path[i-1][0]*Constants.TILE+Constants.TILE/2f, ay=path[i-1][1]*Constants.TILE+Constants.TILE/2f;
-            float bx=path[i][0]*Constants.TILE+Constants.TILE/2f,   by=path[i][1]*Constants.TILE+Constants.TILE/2f;
+            float bx=path[i][0]*Constants.TILE+Constants.TILE/2f, by=path[i][1]*Constants.TILE+Constants.TILE/2f;
             d += Math.sqrt((bx-ax)*(bx-ax)+(by-ay)*(by-ay));
         }
         if (pathIndex < path.length-1) {

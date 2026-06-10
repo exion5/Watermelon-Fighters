@@ -54,14 +54,14 @@ public class Tower {
         switch (ttype) {
             case DART:  cost=70;  range=3.5f; damage=20;  fireRate=38;  color=new Color(0xE53935); break;
             case BOMB:  cost=140; range=2.5f; damage=60;  fireRate=90;  color=new Color(0x37474F); break;
-            case ICE:   cost=100; range=3.0f; damage=10;   fireRate=60;  color=new Color(0x29B6F6); break;
+            case ICE:   cost=100; range=3.0f; damage=10;  fireRate=60;  color=new Color(0x29B6F6); break;
             case SUPER: cost=300; range=4.0f; damage=25;  fireRate=20;  color=new Color(0xFFD600); break;
             case MORTAR:cost=225; range=5.0f; damage=80;  fireRate=120; color=new Color(0x6D4C41); break;
-            case BANANA: cost=100; range=0f;   damage=0;  fireRate=0;   color=new Color(0xFFD600);
+            case BANANA:cost=100; range=0f;   damage=0;   fireRate=0;   color=new Color(0xFFD600);
                         bananaInterval=400; bananaPayout=5; break;
-            case POISON: cost=120; range=3.0f; damage=12; fireRate=45;  color=new Color(0x7CB342);
+            case POISON:cost=120; range=3.0f; damage=12; fireRate=45;  color=new Color(0x7CB342);
                         poisonDmg=4; poisonDuration=250f; break;
-            case THORN:  cost=100; range=4.0f; damage=20; fireRate=55;  color=new Color(0x795548);
+            case THORN: cost=100; range=4.0f; damage=20; fireRate=55;  color=new Color(0x795548);
                         pierceRange=4; break;
         }
         multiShot = false; slowField = false; splashMult = 1.0f; slowMult = 1.0f;
@@ -189,8 +189,8 @@ public class Tower {
             case ICE:    pt = Projectile.PType.FROST_BOLT;   break;
             case SUPER:  pt = Projectile.PType.LASER_BEAM;   break;
             case MORTAR: pt = Projectile.PType.MORTAR_SHELL; splash = 60*splashMult; break;
-            case POISON: pt = Projectile.PType.POISON_DART; break;
-            case THORN:  pt = Projectile.PType.THORN;       break;
+            case POISON: pt = Projectile.PType.POISON_DART;  break;
+            case THORN:  pt = Projectile.PType.THORN;        break;
             default:     pt = Projectile.PType.DART;         break;
         }
         float projSpeed = ttype==TType.SUPER ? 0 : ttype==TType.MORTAR ? 4f : 7f;
