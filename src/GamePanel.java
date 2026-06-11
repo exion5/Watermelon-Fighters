@@ -137,7 +137,6 @@ public class GamePanel extends JPanel implements ActionListener {
             if (autoStart && !waveManager.isWaveActive() && waveManager.hasMoreWaves() && !gameOver && !victory) {
                 selectedTowerType=null; deselectTower();
                 waveManager.startNextWave();
-                Sound.sfx("Audio/wave_start.wav");
             }
         }
         floatTexts.removeIf(ft -> { ft.y+=ft.vy; ft.life--; return ft.life<=0; });
@@ -155,12 +154,16 @@ public class GamePanel extends JPanel implements ActionListener {
             Enemy en = ei.next();
             if (en.hasReached()) {
                 lives -= en.getDamage(); ei.remove();
-                Sound.sfx("Audio/life_lost.wav");
-                if (lives<=0) { lives=0; gameOver=true; Sound.sfx("Audio/game_over.wav"); saveBestWave(); saveBestScore(); return; }
+                if (lives<=0) { 
+                    lives=0; 
+                    gameOver=true; 
+                    saveBestWave(); 
+                    saveBestScore(); 
+                    return; 
+                }
             } else if (en.isDead()) {
                 currency += en.getReward(); score += en.getReward();
                 floatTexts.add(new FloatText(en.getX(), en.getY()-10, "+$"+en.getReward(), UI_GOLD));
-                Sound.sfx("Audio/enemy_die.wav");
                 ei.remove();
             }
         }
@@ -194,8 +197,10 @@ public class GamePanel extends JPanel implements ActionListener {
             floatTexts.add(new FloatText(Constants.GAME_WIDTH/2f, Constants.GAME_HEIGHT/2f - 30,
                 "Wave Clear!  +$"+bonus, new Color(0x88FF88)));
             waveManager.waveComplete();
-            Sound.sfx("Audio/wave_clear.wav");
-            if (!waveManager.hasMoreWaves()) { victory=true; Sound.sfx("Audio/victory.wav"); saveBestWave(); saveBestScore(); }
+            if (!waveManager.hasMoreWaves()) { 
+                victory=true; 
+                saveBestWave(); 
+                saveBestScore(); }
         }
     }
 
@@ -941,7 +946,10 @@ public class GamePanel extends JPanel implements ActionListener {
 
         if (mx>=Constants.GAME_WIDTH) {
             if (waveButtonBounds.contains(mx,my)) {
-                if (!waveActive&&waveManager.hasMoreWaves()&&!gameOver&&!victory) { selectedTowerType=null; deselectTower(); waveManager.startNextWave(); Sound.sfx("Audio/wave_start.wav"); }
+                if (!waveActive&&waveManager.hasMoreWaves()&&!gameOver&&!victory) { 
+                    selectedTowerType=null; 
+                    deselectTower(); 
+                    waveManager.startNextWave(); }
                 return;
             }
             int[] spds={1,2,4};
@@ -973,7 +981,10 @@ public class GamePanel extends JPanel implements ActionListener {
         if (col>=Constants.COLS||row>=Constants.ROWS) return;
         if (selectedTowerType!=null) {
             if (!isPathTile(col,row)&&!hasTower(col,row)) {
-                int c=costOf(selectedTowerType); if (currency>=c) { currency-=c; towers.add(new Tower(col,row,selectedTowerType)); Sound.sfx("Audio/tower_place.wav"); }
+                int c=costOf(selectedTowerType); 
+                if (currency>=c) { 
+                    currency-=c; 
+                    towers.add(new Tower(col,row,selectedTowerType)); }
             }
         } else {
             deselectTower();
